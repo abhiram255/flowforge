@@ -3,20 +3,52 @@ import { Types } from 'mongoose'
 import { ERROR_CODES } from '@flowforge/shared'
 import { AppError } from '../lib/errors'
 import { asyncHandler } from '../lib/asyncHandler'
+import { cache, cacheKeys } from '../lib/cache'
 import { isObjectId } from '../lib/utils'
 import type { WorkspaceContext } from '../lib/context'
-import { Membership } from '../models/Membership'
+import { Membership, type MembershipDoc } from '../models/Membership'
 import { Comment } from '../models/Comment'
 import { Project, type ProjectDoc } from '../models/Project'
 import { Task } from '../models/Task'
 import { Workspace, type WorkspaceDoc } from '../models/Workspace'
 
+/**
+ * The access cache stores JSON, so identifiers and dates come back as strings.
+ * Revive them to the shapes the rest of the codebase (and Mongoose casts) expect.
+ */
+const reviveWorkspace = (raw: WorkspaceDoc): WorkspaceDoc => ({
+  ...raw,
+  _id: new Types.ObjectId(String(raw._id)),
+  ownerId: new Types.ObjectId(String(raw.ownerId)),
+  createdAt: new Date(raw.createdAt),
+  updatedAt: new Date(raw.updatedAt),
+})
+
+const reviveMembership = (raw: MembershipDoc): MembershipDoc => ({
+  ...raw,
+  _id: new Types.ObjectId(String(raw._id)),
+  workspaceId: new Types.ObjectId(String(raw.workspaceId)),
+  userId: new Types.ObjectId(String(raw.userId)),
+  joinedAt: new Date(raw.joinedAt),
+  createdAt: new Date(raw.createdAt),
+  updatedAt: new Date(raw.updatedAt),
+})
+
+/** Workspace documents change rarely; 30s of bounded staleness is invalidated on writes. */
+const WORKSPACE_TTL_SECONDS = 30
+/** Role changes take effect within 15s at worst, and immediately via invalidation. */
+const MEMBERSHIP_TTL_SECONDS = 15
+
 async function resolveWorkspace(ref: string): Promise<WorkspaceDoc> {
-  const workspace = isObjectId(ref)
-    ? await Workspace.findById(ref).lean<WorkspaceDoc>()
-    : await Workspace.findOne({ slug: ref.toLowerCase() }).lean<WorkspaceDoc>()
+  const key = cacheKeys.workspaceByRef(ref.toLowerCase())
+  const workspace = await cache.wrap<WorkspaceDoc | null>(key, WORKSPACE_TTL_SECONDS, async () => {
+    const found = isObjectId(ref)
+      ? await Workspace.findById(ref).lean<WorkspaceDoc>()
+      : await Workspace.findOne({ slug: ref.toLowerCase() }).lean<WorkspaceDoc>()
+    return found ?? null
+  })
   if (!workspace) throw AppError.notFound('Workspace not found', ERROR_CODES.WORKSPACE_NOT_FOUND)
-  return workspace
+  return reviveWorkspace(workspace)
 }
 
 /**
@@ -25,11 +57,15 @@ async function resolveWorkspace(ref: string): Promise<WorkspaceDoc> {
  */
 export async function loadWorkspaceContext(userId: string, ref: string): Promise<WorkspaceContext> {
   const workspace = await resolveWorkspace(ref)
-  const membership = await Membership.findOne({ workspaceId: workspace._id, userId }).lean()
+  const membership = await cache.wrap<MembershipDoc | null>(
+    cacheKeys.membership(String(workspace._id), userId),
+    MEMBERSHIP_TTL_SECONDS,
+    async () => Membership.findOne({ workspaceId: workspace._id, userId }).lean<MembershipDoc>(),
+  )
   if (!membership) throw AppError.notFound('Workspace not found', ERROR_CODES.WORKSPACE_NOT_FOUND)
   return {
     workspace,
-    membership,
+    membership: reviveMembership(membership),
     role: membership.role,
     project: null,
     task: null,

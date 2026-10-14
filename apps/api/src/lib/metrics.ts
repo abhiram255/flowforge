@@ -21,6 +21,27 @@ export const wsConnectionsGauge = new client.Gauge({
   help: 'Active Socket.IO connections',
 })
 
+/** Read-through cache lookups that returned a stored value. */
+export const cacheHitsTotal = new client.Counter({
+  name: 'flowforge_cache_hits_total',
+  help: 'Cache hits (value served from the cache)',
+  labelNames: ['namespace'],
+})
+
+/** Cache misses — one increment per producer execution (i.e. database work). */
+export const cacheMissesTotal = new client.Counter({
+  name: 'flowforge_cache_misses_total',
+  help: 'Cache misses (producer executions / database work performed)',
+  labelNames: ['namespace'],
+})
+
+/** Concurrent misses on the same key that joined an in-flight producer. */
+export const cacheCoalescedTotal = new client.Counter({
+  name: 'flowforge_cache_coalesced_total',
+  help: 'Cache misses coalesced onto an in-flight producer (stampede protection)',
+  labelNames: ['namespace'],
+})
+
 export const metricsMiddleware: RequestHandler = (req, res, next) => {
   const stopTimer = httpRequestDuration.startTimer()
   res.on('finish', () => {

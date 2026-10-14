@@ -20,7 +20,8 @@ Every claim below is enforced by code and checked by tests — not just describe
 | Concurrency safety | Tasks carry a `version`; writes are compare-and-set, conflicts return `409` with the latest payload | OCC race test: two same-version writes → exactly one winner |
 | Secure sessions | Refresh tokens are opaque, stored only as SHA-256 hashes, rotated on use, with family reuse detection | `auth.test.ts`: replay after rotation revokes the family |
 | Server-side RBAC | Role hierarchy (`owner > admin > member > viewer`) enforced in middleware and services | `rbac.test.ts` — viewers/ members/ admins each constrained |
-| Measurable DB work | Compound indexes sized to the board query, verified with `explain` | p95 **15.65 ms → 0.92 ms**, docs examined **20,000 → 0** (`docs/BENCHMARKS.md`) |
+| Measurable DB work | Compound indexes sized to the board query, verified with `explain` | p95 **17.6 ms → 1.8 ms**, docs examined **20,000 → 40** (`docs/BENCHMARKS.md`); at 400k documents, 88–229× p95 across the app's query shapes (`docs/SCALABILITY_EXPERIMENTS.md`) |
+| Scale-out without losing correctness | Two API instances behind a load balancer with a shared Redis rate-limit store and a Socket.IO Redis adapter | 1.46–1.59× throughput, 0 errors, 30/60 logins under one shared budget, cross-instance event in 97 ms (Experiment 4) |
 | Real-time correctness | Socket.IO rooms are joined only after a membership check; events fire only after successful writes | `realtime.test.ts` incl. foreign-room rejection |
 | Reconnect sync | Clients refetch everything on socket reconnect and patch caches from events otherwise | `apps/web/src/hooks/useRealtime.ts` |
 
@@ -118,13 +119,18 @@ Run everything locally with `npm run typecheck && npm test && npm run build`.
 | Web unit tests | ✅ 16 passing | API client refresh single-flight, drag-drop math, task card |
 | Query benchmark | ✅ measured | `docs/benchmark-results.json` (10× p95; 20,000 → 40 docs examined with the compound index) |
 | HTTP load smoke | ✅ measured | `docs/load-smoke-results.json` — see honest interpretation below |
+| Scalability experiments (6) | ✅ all measured | **`docs/SCALABILITY_EXPERIMENTS.md`** — load at 10/50/100 conns, 400k-document DB scaling, caching (100 % hit ratio, single-flight), horizontal scaling (1.46–1.59×), concurrent writes (0 lost updates, 0 duplicate events), failure drills (0 failed requests, 0 jobs lost) |
 | E2E (Playwright) | ✅ 6 passing | `npm run e2e` walks register → workspace → board → task → comment, plus filters |
 
-**Honest performance note.** At 10 concurrent connections the board read serves p97.5 ≈ 104 ms;
-at 100 connections the single process saturates (~160 rps) and latency queues. That is a
-single-machine measurement with the load generator, API and MongoDB sharing one CPU — not a
-capacity claim. The remediation path (horizontal scale behind a load balancer, replica set,
-dedicated load generator) is documented in [docs/BENCHMARKS.md](./docs/BENCHMARKS.md).
+**Honest performance note.** On one instance, dashboard and project reads hold p97.5 ≈ 190–245 ms at 50
+concurrent connections and the analytics read reaches 413 rps with a warm cache; the board read now
+returns *every* task of a project (48 in the test dataset) and serves 190 rps at 100 connections, down
+from 139 rps when it was silently truncating to 25 tasks. At 100 connections a single process on this
+machine saturates (~200 rps) and latency queues — that is a property of the topology (load generator,
+API and MongoDB sharing one CPU), not a capacity claim. Two instances behind a load balancer lift
+throughput 1.46–1.59× at equal or better tail latency, and the failure drills show zero failed
+requests through a rolling restart. Methodology, raw artifacts and per-scenario tables:
+[`docs/SCALABILITY_EXPERIMENTS.md`](./docs/SCALABILITY_EXPERIMENTS.md).
 
 ## Known limitations
 
@@ -132,7 +138,12 @@ dedicated load generator) is documented in [docs/BENCHMARKS.md](./docs/BENCHMARK
 - Without Redis the cache and job queue are in-process — correct for a single instance, not shared across replicas.
 - The S3 storage driver is implemented and type-checked but has not been exercised against a live bucket in this environment.
 - Email delivery logs to the console unless `SMTP_URL` is configured; invitation links are also returned to admins so the flow works offline.
-- Presence (who is viewing a board) is tracked per API instance.
+- Presence (who is viewing a board / "N people online") is counted with `fetchSockets()`, so it is
+  correct across replicas when the Socket.IO Redis adapter is active; without Redis it is per-instance.
+- Access caches (workspace document 30 s, membership 15 s, user existence 30 s) bound how quickly a
+  direct database change propagates: a role change applies within 15 s worst case (immediately via
+  invalidation, globally when Redis is shared) and a user row deleted outside the API keeps working
+  for up to 30 s — the same bounded-staleness class as the 15-minute access-token window.
 - Password reset / email verification are not implemented.
 
 ## Documentation map
@@ -142,6 +153,7 @@ dedicated load generator) is documented in [docs/BENCHMARKS.md](./docs/BENCHMARK
 - **[docs/ARCHITECTURE.md](./docs/ARCHITECTURE.md)** — modules, data model, request lifecycle, realtime design, security model.
 - **[docs/API.md](./docs/API.md)** — endpoint reference with permissions and error codes.
 - **[docs/BENCHMARKS.md](./docs/BENCHMARKS.md)** — methodology and measured results.
+- **[docs/SCALABILITY_EXPERIMENTS.md](./docs/SCALABILITY_EXPERIMENTS.md)** — the six scalability experiments with raw numbers, artifacts and reproduction commands.
 - **[docs/DEMO.md](./docs/DEMO.md)** — the 7-scenario demo script.
 
 ## License

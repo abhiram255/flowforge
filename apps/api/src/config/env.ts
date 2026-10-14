@@ -34,14 +34,19 @@ const envSchema = z
 
     MONGODB_URI: z.string().min(1).default('mongodb://127.0.0.1:27017/flowforge_dev'),
 
-    JWT_ACCESS_SECRET: z.string().min(32, 'JWT_ACCESS_SECRET must be at least 32 characters').default(DEV_JWT_SECRET),
+    JWT_ACCESS_SECRET: z
+      .string()
+      .min(32, 'JWT_ACCESS_SECRET must be at least 32 characters')
+      .default(DEV_JWT_SECRET),
     ACCESS_TOKEN_TTL: z.string().default('15m'),
     REFRESH_TOKEN_TTL_DAYS: z.coerce.number().int().min(1).max(365).default(30),
     COOKIE_SECURE: booleanish(false),
 
     REDIS_URL: z.string().optional(),
 
-    LOG_LEVEL: z.enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace', 'silent']).default('info'),
+    LOG_LEVEL: z
+      .enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace', 'silent'])
+      .default('info'),
 
     STORAGE_DRIVER: z.enum(['local', 's3']).default('local'),
     LOCAL_STORAGE_DIR: z.string().default('./storage'),
@@ -61,23 +66,55 @@ const envSchema = z
     SEED_RESET: booleanish(false),
     /** Benchmark-only escape hatch — refused in production. */
     RATE_LIMIT_DISABLED: booleanish(false),
+    /** Cache A/B comparison for benchmarks — refused in production. */
+    CACHE_DISABLED: booleanish(false),
   })
   .superRefine((value, ctx) => {
     if (value.NODE_ENV === 'production') {
       if (value.SEED_ON_START || value.SEED_RESET) {
-        ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['SEED_ON_START'], message: 'Seeding is refused in production' })
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ['SEED_ON_START'],
+          message: 'Seeding is refused in production',
+        })
       }
       if (value.RATE_LIMIT_DISABLED) {
-        ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['RATE_LIMIT_DISABLED'], message: 'Rate limiting cannot be disabled in production' })
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ['RATE_LIMIT_DISABLED'],
+          message: 'Rate limiting cannot be disabled in production',
+        })
+      }
+      if (value.CACHE_DISABLED) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ['CACHE_DISABLED'],
+          message: 'The cache cannot be disabled in production',
+        })
       }
       if (value.JWT_ACCESS_SECRET === DEV_JWT_SECRET) {
-        ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['JWT_ACCESS_SECRET'], message: 'Replace the development JWT secret in production' })
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ['JWT_ACCESS_SECRET'],
+          message: 'Replace the development JWT secret in production',
+        })
       }
       if (!value.COOKIE_SECURE) {
-        ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['COOKIE_SECURE'], message: 'COOKIE_SECURE must be true in production (HTTPS-only refresh cookies)' })
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ['COOKIE_SECURE'],
+          message: 'COOKIE_SECURE must be true in production (HTTPS-only refresh cookies)',
+        })
       }
-      if (value.STORAGE_DRIVER === 's3' && (!value.S3_BUCKET || !value.S3_ACCESS_KEY_ID || !value.S3_SECRET_ACCESS_KEY)) {
-        ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['STORAGE_DRIVER'], message: 'S3 storage requires S3_BUCKET, S3_ACCESS_KEY_ID and S3_SECRET_ACCESS_KEY' })
+      if (
+        value.STORAGE_DRIVER === 's3' &&
+        (!value.S3_BUCKET || !value.S3_ACCESS_KEY_ID || !value.S3_SECRET_ACCESS_KEY)
+      ) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ['STORAGE_DRIVER'],
+          message: 'S3 storage requires S3_BUCKET, S3_ACCESS_KEY_ID and S3_SECRET_ACCESS_KEY',
+        })
       }
     }
   })
@@ -85,7 +122,9 @@ const envSchema = z
 const parsed = envSchema.safeParse(process.env)
 
 if (!parsed.success) {
-  const details = parsed.error.issues.map((issue) => `  - ${issue.path.join('.')}: ${issue.message}`).join('\n')
+  const details = parsed.error.issues
+    .map((issue) => `  - ${issue.path.join('.')}: ${issue.message}`)
+    .join('\n')
   // eslint-disable-next-line no-console
   console.error(`Invalid environment configuration:\n${details}`)
   process.exit(1)

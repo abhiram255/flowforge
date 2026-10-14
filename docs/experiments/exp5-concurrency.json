@@ -1,0 +1,242 @@
+{
+  "experiment": 5,
+  "generatedAt": "2026-10-14T17:12:23.902Z",
+  "environment": {
+    "machine": "Intel(R) Core(TM) i9-10885H CPU @ 2.40GHz (16 logical cores)",
+    "node": "v22.17.1",
+    "apiInstances": 1,
+    "concurrencyControl": "optimistic concurrency control — PATCH must carry the task version, compare-and-set on {workspaceId, version}",
+    "methodology": "Real HTTP PATCHes from 5 different authenticated users plus one socket observer counting task:updated events. Scene A fires 6 simultaneous same-version writes in each of 20 rounds; Scene B runs 5 writers doing 3 updates each with a fetch-retry loop (the strategy the web client uses); Scene C moves one task four ways at once."
+  },
+  "sceneA": {
+    "rounds": 20,
+    "writersPerRound": 5,
+    "attempts": 100,
+    "successes": 20,
+    "conflicts": 80,
+    "forbidden": 0,
+    "serverErrors": 0,
+    "versionInvariantHolds": true,
+    "singleEventPerRound": true,
+    "perRound": [
+      {
+        "round": 1,
+        "statuses": {
+          "200": 1,
+          "409": 4
+        },
+        "version": 1,
+        "events": 1
+      },
+      {
+        "round": 2,
+        "statuses": {
+          "200": 1,
+          "409": 4
+        },
+        "version": 2,
+        "events": 1
+      },
+      {
+        "round": 3,
+        "statuses": {
+          "200": 1,
+          "409": 4
+        },
+        "version": 3,
+        "events": 1
+      },
+      {
+        "round": 4,
+        "statuses": {
+          "200": 1,
+          "409": 4
+        },
+        "version": 4,
+        "events": 1
+      },
+      {
+        "round": 5,
+        "statuses": {
+          "200": 1,
+          "409": 4
+        },
+        "version": 5,
+        "events": 1
+      },
+      {
+        "round": 6,
+        "statuses": {
+          "200": 1,
+          "409": 4
+        },
+        "version": 6,
+        "events": 1
+      },
+      {
+        "round": 7,
+        "statuses": {
+          "200": 1,
+          "409": 4
+        },
+        "version": 7,
+        "events": 1
+      },
+      {
+        "round": 8,
+        "statuses": {
+          "200": 1,
+          "409": 4
+        },
+        "version": 8,
+        "events": 1
+      },
+      {
+        "round": 9,
+        "statuses": {
+          "200": 1,
+          "409": 4
+        },
+        "version": 9,
+        "events": 1
+      },
+      {
+        "round": 10,
+        "statuses": {
+          "200": 1,
+          "409": 4
+        },
+        "version": 10,
+        "events": 1
+      },
+      {
+        "round": 11,
+        "statuses": {
+          "200": 1,
+          "409": 4
+        },
+        "version": 11,
+        "events": 1
+      },
+      {
+        "round": 12,
+        "statuses": {
+          "200": 1,
+          "409": 4
+        },
+        "version": 12,
+        "events": 1
+      },
+      {
+        "round": 13,
+        "statuses": {
+          "200": 1,
+          "409": 4
+        },
+        "version": 13,
+        "events": 1
+      },
+      {
+        "round": 14,
+        "statuses": {
+          "200": 1,
+          "409": 4
+        },
+        "version": 14,
+        "events": 1
+      },
+      {
+        "round": 15,
+        "statuses": {
+          "200": 1,
+          "409": 4
+        },
+        "version": 15,
+        "events": 1
+      },
+      {
+        "round": 16,
+        "statuses": {
+          "200": 1,
+          "409": 4
+        },
+        "version": 16,
+        "events": 1
+      },
+      {
+        "round": 17,
+        "statuses": {
+          "200": 1,
+          "409": 4
+        },
+        "version": 17,
+        "events": 1
+      },
+      {
+        "round": 18,
+        "statuses": {
+          "200": 1,
+          "409": 4
+        },
+        "version": 18,
+        "events": 1
+      },
+      {
+        "round": 19,
+        "statuses": {
+          "200": 1,
+          "409": 4
+        },
+        "version": 19,
+        "events": 1
+      },
+      {
+        "round": 20,
+        "statuses": {
+          "200": 1,
+          "409": 4
+        },
+        "version": 20,
+        "events": 1
+      }
+    ],
+    "latencyNote": "statuses are HTTP codes: 200 winner, 409 version conflict"
+  },
+  "sceneB": {
+    "writers": 5,
+    "updatesPerWriter": 3,
+    "attempts": 65,
+    "successes": 15,
+    "conflicts": 50,
+    "serverErrors": 0,
+    "maxAttemptsPerUpdate": 5,
+    "avgLatencyMs": 41.7,
+    "finalVersionExpected": 35,
+    "finalVersionActual": 35,
+    "eventsObserved": 15
+  },
+  "sceneC": {
+    "attempts": 4,
+    "statuses": {
+      "200": 1,
+      "409": 3
+    },
+    "finalPosition": -10,
+    "winnerTarget": -10,
+    "positionMatchesWinner": true
+  },
+  "verdicts": {
+    "exactlyOneWinnerPerRound": true,
+    "versionInvariantHolds": true,
+    "noLostUpdates": true,
+    "noDuplicateEvents": true,
+    "sceneBEventsMatch": true,
+    "singleEventPerRound": true,
+    "viewerRejected": true,
+    "noServerErrors": true
+  },
+  "events": {
+    "observed": 36,
+    "expectedFromSuccessfulWrites": 36
+  }
+}

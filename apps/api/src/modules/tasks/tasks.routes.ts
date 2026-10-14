@@ -11,9 +11,21 @@ import { AppError } from '../../lib/errors'
 import { requireAuth } from '../../middleware/auth'
 import { requireRole } from '../../middleware/rbac'
 import { validate } from '../../middleware/validate'
-import { getCtx, loadWorkspaceContext, requireProject, requireTask } from '../../middleware/workspace'
+import {
+  getCtx,
+  loadWorkspaceContext,
+  requireProject,
+  requireTask,
+} from '../../middleware/workspace'
 import { Project } from '../../models/Project'
-import { createTask, deleteTask, getSubtasks, getTask, listTasks, updateTask } from './tasks.service'
+import {
+  createTask,
+  deleteTask,
+  getSubtasks,
+  getTask,
+  listTasks,
+  updateTask,
+} from './tasks.service'
 
 const workspaceScopedListSchema = taskListQuerySchema.extend({
   workspaceId: objectIdSchema.optional(),

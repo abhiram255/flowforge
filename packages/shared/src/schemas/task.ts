@@ -50,6 +50,13 @@ const csv = <T extends z.ZodTypeAny>(schema: T) =>
     .pipe(z.array(schema).optional())
 
 export const taskListQuerySchema = paginationQuerySchema.extend({
+  /**
+   * No default here on purpose: the service picks the right one per mode.
+   * Feeds clamp to MAX_PAGE_SIZE with a DEFAULT_PAGE_SIZE fallback; board reads
+   * (`sort=position`) fall back to MAX_BOARD_TASKS. A schema default of 25 used
+   * to silently truncate every board to its first 25 tasks.
+   */
+  limit: z.coerce.number().int().min(1).max(MAX_BOARD_TASKS).optional(),
   status: csv(taskStatusSchema),
   priority: csv(taskPrioritySchema),
   assigneeId: objectIdSchema.optional(),
@@ -65,8 +72,3 @@ export type UpdateTaskInput = z.infer<typeof updateTaskSchema>
 export type TaskListQuery = z.infer<typeof taskListQuerySchema>
 export type TaskStatusInput = z.infer<typeof taskStatusSchema>
 export type TaskPriorityInput = z.infer<typeof taskPrioritySchema>
-
-/** Hard cap for board queries — a Kanban column set is never cursor-paginated. */
-export const boardQuerySchema = z.object({
-  limit: z.coerce.number().int().min(1).max(MAX_BOARD_TASKS).default(MAX_BOARD_TASKS),
-})

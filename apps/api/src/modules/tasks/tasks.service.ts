@@ -28,6 +28,7 @@ import { notify } from '../notifications/notifications.service'
 
 interface DecorateOptions {
   includeCounts?: boolean
+  includeDescription?: boolean
   /** Pre-loaded projects (e.g. from requireProject middleware) to skip a query. */
   knownProjects?: Array<Pick<ProjectDoc, 'key' | 'name'> & { _id: Types.ObjectId }>
 }
@@ -57,7 +58,10 @@ async function countAttachments(tasks: TaskDoc[]): Promise<Map<string, number>> 
 }
 
 /** Batches project/assignee/reporter/count lookups so lists never N+1. */
-export async function decorateTasks(tasks: TaskDoc[], options: DecorateOptions = {}): Promise<TaskDTO[]> {
+export async function decorateTasks(
+  tasks: TaskDoc[],
+  options: DecorateOptions = {},
+): Promise<TaskDTO[]> {
   if (tasks.length === 0) return []
 
   const projectIds = uniq(tasks.map((task) => String(task.projectId)))
@@ -100,6 +104,7 @@ export async function decorateTasks(tasks: TaskDoc[], options: DecorateOptions =
       subtaskCount: subtasks.get(String(task._id)),
       commentCount: comments.get(String(task._id)),
       attachmentCount: attachments.get(String(task._id)),
+      includeDescription: options.includeDescription,
     }),
   )
 }
@@ -140,7 +145,10 @@ export interface TaskListParams extends TaskListQuery {
   projectId?: string
 }
 
-export async function listTasks(ctx: WorkspaceContext, query: TaskListParams): Promise<Paginated<TaskDTO>> {
+export async function listTasks(
+  ctx: WorkspaceContext,
+  query: TaskListParams,
+): Promise<Paginated<TaskDTO>> {
   const filter: FilterQuery<TaskDoc> = { workspaceId: ctx.workspace._id }
 
   const projectId = query.projectId ?? (ctx.project ? String(ctx.project._id) : undefined)
@@ -176,7 +184,10 @@ export async function listTasks(ctx: WorkspaceContext, query: TaskListParams): P
     const limit = Math.min(query.limit ?? MAX_BOARD_TASKS, MAX_BOARD_TASKS)
     const docs = await Task.find(filter).sort(sortSpec).limit(limit).lean<TaskDoc[]>()
     return {
-      data: await decorateTasks(docs, ctx.project ? { knownProjects: [ctx.project] } : {}),
+      data: await decorateTasks(docs, {
+        includeDescription: false,
+        ...(ctx.project ? { knownProjects: [ctx.project] } : {}),
+      }),
       nextCursor: null,
       hasMore: false,
     }
@@ -189,7 +200,10 @@ export async function listTasks(ctx: WorkspaceContext, query: TaskListParams): P
     .lean<TaskDoc[]>()
   const page = finalizePage(docs, limit)
   return {
-    data: await decorateTasks(page.data, ctx.project ? { knownProjects: [ctx.project] } : {}),
+    data: await decorateTasks(page.data, {
+      includeDescription: false,
+      ...(ctx.project ? { knownProjects: [ctx.project] } : {}),
+    }),
     nextCursor: page.nextCursor,
     hasMore: page.hasMore,
   }
@@ -212,10 +226,7 @@ export async function getSubtasks(ctx: WorkspaceContext): Promise<TaskDTO[]> {
   return decorateTasks(docs, { includeCounts: true })
 }
 
-export async function createTask(
-  ctx: WorkspaceContext,
-  input: CreateTaskInput,
-): Promise<TaskDTO> {
+export async function createTask(ctx: WorkspaceContext, input: CreateTaskInput): Promise<TaskDTO> {
   if (!ctx.project) throw AppError.internal('Project context missing')
   const project = ctx.project
 
@@ -229,7 +240,8 @@ export async function createTask(
       projectId: project._id,
     }).lean()
     if (!parent) throw AppError.validation('Parent task not found in this project')
-    if (parent.parentTaskId) throw AppError.validation('Subtasks cannot be nested more than one level deep')
+    if (parent.parentTaskId)
+      throw AppError.validation('Subtasks cannot be nested more than one level deep')
     parentTaskId = parent._id
   }
 
@@ -289,10 +301,7 @@ export async function createTask(
   return dto as TaskDTO
 }
 
-export async function updateTask(
-  ctx: WorkspaceContext,
-  input: UpdateTaskInput,
-): Promise<TaskDTO> {
+export async function updateTask(ctx: WorkspaceContext, input: UpdateTaskInput): Promise<TaskDTO> {
   if (!ctx.task) throw AppError.internal('Task context missing')
   const task = ctx.task
   const set: Record<string, unknown> = {}
@@ -384,10 +393,7 @@ export async function updateTask(
     })
   }
   if (statusChanged) {
-    const watchers = uniq([
-      String(updated.reporterId),
-      ...updated.assigneeIds.map(String),
-    ])
+    const watchers = uniq([String(updated.reporterId), ...updated.assigneeIds.map(String)])
     await notify({
       workspaceId: ctx.workspace._id,
       actorId: ctx.membership.userId,
@@ -407,7 +413,8 @@ export async function deleteTask(ctx: WorkspaceContext): Promise<void> {
   if (!ctx.task) throw AppError.internal('Task context missing')
   const task = ctx.task
 
-  const canDelete = hasAtLeast(ctx.role, 'admin') || String(task.reporterId) === String(ctx.membership.userId)
+  const canDelete =
+    hasAtLeast(ctx.role, 'admin') || String(task.reporterId) === String(ctx.membership.userId)
   if (!canDelete) {
     throw AppError.forbidden('Only the reporter or a workspace admin can delete this task')
   }
@@ -419,7 +426,9 @@ export async function deleteTask(ctx: WorkspaceContext): Promise<void> {
     .select('storageKey')
     .lean()
   const driver = getStorageDriver()
-  await Promise.all(attachments.map((file) => driver.delete(file.storageKey).catch(() => undefined)))
+  await Promise.all(
+    attachments.map((file) => driver.delete(file.storageKey).catch(() => undefined)),
+  )
 
   await Promise.all([
     Attachment.deleteMany({ taskId: { $in: taskIds } }),

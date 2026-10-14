@@ -62,11 +62,14 @@ describe('realtime collaboration', () => {
 
     const workspace = await createWorkspaceFor(owner, 'Socket Workspace')
     workspaceId = workspace.id
-    const project = await createProjectFor(owner, workspace, { name: 'Socket Project', key: 'SOCK' })
+    const project = await createProjectFor(owner, workspace, {
+      name: 'Socket Project',
+      key: 'SOCK',
+    })
     projectId = project.id
 
     server = createServer(app)
-    initRealtime(server)
+    await initRealtime(server)
     await new Promise<void>((resolve) => server.listen(0, () => resolve()))
     const address = server.address() as AddressInfo
     url = `http://localhost:${address.port}`

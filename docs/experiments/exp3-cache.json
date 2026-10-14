@@ -1,0 +1,129 @@
+{
+  "experiment": 3,
+  "generatedAt": "2026-10-14T16:58:38.646Z",
+  "environment": {
+    "machine": "Intel(R) Core(TM) i9-10885H CPU @ 2.40GHz (16 logical cores)",
+    "node": "v22.17.1",
+    "cache": "Redis 7.4 (docker), read-through cache in apps/api/src/lib/cache.ts",
+    "ttl": "analytics 60s, dashboard 20s, workspace member minis 30s; all invalidated on workspace writes",
+    "methodology": "Two API child processes share one MongoDB and one Redis: one with the cache enabled, one with CACHE_DISABLED=true (dev-only flag, refused in production). Cache counters are Prometheus counters scraped from /metrics; hit ratio = hits / (hits + misses) over each scenario. The cold-key burst uses 50 genuinely parallel HTTP/1.1 requests over pre-opened sockets (node:http agent) after deleting the workspace keys in Redis."
+  },
+  "coldStampede": {
+    "concurrentRequests": 50,
+    "allOk": true,
+    "wallMs": 184,
+    "producerRuns": 1,
+    "coalescedWaiters": 49,
+    "cacheHits": 150,
+    "distinctPayloads": 1,
+    "bustedKeys": 2
+  },
+  "coldStampedeCacheDisabled": {
+    "concurrentRequests": 50,
+    "allOk": true,
+    "wallMs": 657,
+    "producerRuns": 200,
+    "coalescedWaiters": null
+  },
+  "warmCache": [
+    {
+      "name": "dashboard @ 50 concurrent (warm cache)",
+      "method": "GET",
+      "url": "http://127.0.0.1:43111/api/v1/workspaces/6acfb4459dc865022e5eee56/analytics/dashboard",
+      "connections": 50,
+      "durationSeconds": 10,
+      "requestsPerSecond": 355,
+      "latencyMs": {
+        "average": 139,
+        "p50": 134,
+        "p97_5": 192,
+        "p99": 270
+      },
+      "totalRequests": 3551,
+      "non2xx": 0,
+      "errors": 0,
+      "timeouts": 0,
+      "cpuPercentOfOneCore": 116.8,
+      "cacheHits": 14354,
+      "cacheMisses": 2,
+      "hitRatio": 1
+    },
+    {
+      "name": "analytics @ 50 concurrent (warm cache)",
+      "method": "GET",
+      "url": "http://127.0.0.1:43111/api/v1/workspaces/6acfb4459dc865022e5eee56/analytics?range=30",
+      "connections": 50,
+      "durationSeconds": 10,
+      "requestsPerSecond": 453,
+      "latencyMs": {
+        "average": 109.6,
+        "p50": 107,
+        "p97_5": 152,
+        "p99": 155
+      },
+      "totalRequests": 4534,
+      "non2xx": 0,
+      "errors": 0,
+      "timeouts": 0,
+      "cpuPercentOfOneCore": 111.5,
+      "cacheHits": 18288,
+      "cacheMisses": 1,
+      "hitRatio": 1
+    }
+  ],
+  "cacheDisabledComparison": [
+    {
+      "name": "dashboard @ 50 concurrent (cache disabled)",
+      "method": "GET",
+      "url": "http://127.0.0.1:43111/api/v1/workspaces/6acfb4459dc865022e5eee56/analytics/dashboard",
+      "connections": 50,
+      "durationSeconds": 10,
+      "requestsPerSecond": 410,
+      "latencyMs": {
+        "average": 120.3,
+        "p50": 116,
+        "p97_5": 198,
+        "p99": 231
+      },
+      "totalRequests": 4104,
+      "non2xx": 0,
+      "errors": 0,
+      "timeouts": 0,
+      "cpuPercentOfOneCore": 0.3
+    },
+    {
+      "name": "analytics @ 50 concurrent (cache disabled)",
+      "method": "GET",
+      "url": "http://127.0.0.1:43111/api/v1/workspaces/6acfb4459dc865022e5eee56/analytics?range=30",
+      "connections": 50,
+      "durationSeconds": 10,
+      "requestsPerSecond": 450,
+      "latencyMs": {
+        "average": 109.7,
+        "p50": 108,
+        "p97_5": 165,
+        "p99": 173
+      },
+      "totalRequests": 4503,
+      "non2xx": 0,
+      "errors": 0,
+      "timeouts": 0,
+      "cpuPercentOfOneCore": 1.1
+    }
+  ],
+  "freshness": {
+    "writeInvalidation": {
+      "completedBefore": 30,
+      "completedAfter": 31,
+      "freshImmediately": true,
+      "latencyMs": 23
+    },
+    "ttlBound": {
+      "dashboardTtlSeconds": 20,
+      "analyticsTtlSeconds": 60,
+      "observedDashboardStalenessSeconds": 20,
+      "observedAnalyticsStalenessSeconds": 61,
+      "note": "A write through the API invalidates immediately (measured above); a direct database write cannot invalidate, so the cached value is served until its TTL expires — the observed staleness must stay within the TTL."
+    }
+  }
+}

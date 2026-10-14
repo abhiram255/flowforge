@@ -1,0 +1,312 @@
+{
+  "experiment": 4,
+  "generatedAt": "2026-10-14T17:09:58.860Z",
+  "environment": {
+    "machine": "Intel(R) Core(TM) i9-10885H CPU @ 2.40GHz (16 logical cores)",
+    "node": "v22.17.1",
+    "apiInstances": "two child processes behind a round-robin HTTP proxy with 1s health checks and one retry on connection failure for idempotent requests",
+    "redis": "docker redis:7-alpine shared by both instances (cache, queues, rate-limit store, Socket.IO adapter)",
+    "mongodb": "local single-node MongoDB shared by both instances",
+    "methodology": "Same autocannon scenarios in both configurations; rate limiting disabled except in the dedicated shared-budget check, which uses the credential limiter (30 requests / 15 min) with two instances and no RATE_LIMIT_DISABLED. Per-instance CPU and request counts come from each process's /metrics endpoint. Health checks add ~1 rps per instance to the request counters."
+  },
+  "results": [
+    {
+      "scenario": "board @ 50 concurrent",
+      "single": {
+        "name": "single instance — board @ 50",
+        "method": "GET",
+        "url": "http://127.0.0.1:43201/api/v1/projects/6acfb6f082fffbde81f3342b/tasks?sort=position",
+        "connections": 50,
+        "durationSeconds": 10,
+        "requestsPerSecond": 137,
+        "latencyMs": {
+          "average": 358.2,
+          "p50": 321,
+          "p97_5": 595,
+          "p99": 626
+        },
+        "totalRequests": 1371,
+        "non2xx": 0,
+        "errors": 0,
+        "timeouts": 0,
+        "cpuPercentOfOneCore": 61.6
+      },
+      "twoInstances": {
+        "name": "two instances — board @ 50",
+        "method": "GET",
+        "url": "http://127.0.0.1:43200/api/v1/projects/6acfb6f082fffbde81f3342b/tasks?sort=position",
+        "connections": 50,
+        "durationSeconds": 10,
+        "requestsPerSecond": 213,
+        "latencyMs": {
+          "average": 232.4,
+          "p50": 236,
+          "p97_5": 678,
+          "p99": 800
+        },
+        "totalRequests": 2126,
+        "non2xx": 0,
+        "errors": 0,
+        "timeouts": 0,
+        "cpuPercentOfOneCore": -2.6,
+        "perInstance": {
+          "api-a": {
+            "requestsServed": 1101,
+            "cpuPercentOfOneCore": 106.7
+          },
+          "api-b": {
+            "requestsServed": 1100,
+            "cpuPercentOfOneCore": 120.3
+          }
+        },
+        "balancer": [
+          {
+            "name": "api-a",
+            "healthy": true,
+            "requests": 1089,
+            "retries": 0,
+            "errors": 0
+          },
+          {
+            "name": "api-b",
+            "healthy": true,
+            "requests": 1089,
+            "retries": 0,
+            "errors": 0
+          }
+        ]
+      },
+      "throughputGain": 1.55
+    },
+    {
+      "scenario": "board @ 100 concurrent",
+      "single": {
+        "name": "single instance — board @ 100",
+        "method": "GET",
+        "url": "http://127.0.0.1:43201/api/v1/projects/6acfb6f082fffbde81f3342b/tasks?sort=position",
+        "connections": 100,
+        "durationSeconds": 10,
+        "requestsPerSecond": 163,
+        "latencyMs": {
+          "average": 588.8,
+          "p50": 572,
+          "p97_5": 819,
+          "p99": 960
+        },
+        "totalRequests": 1794,
+        "non2xx": 0,
+        "errors": 0,
+        "timeouts": 0,
+        "cpuPercentOfOneCore": 68.4
+      },
+      "twoInstances": {
+        "name": "two instances — board @ 100",
+        "method": "GET",
+        "url": "http://127.0.0.1:43200/api/v1/projects/6acfb6f082fffbde81f3342b/tasks?sort=position",
+        "connections": 100,
+        "durationSeconds": 10,
+        "requestsPerSecond": 238,
+        "latencyMs": {
+          "average": 405.4,
+          "p50": 377,
+          "p97_5": 896,
+          "p99": 941
+        },
+        "totalRequests": 2376,
+        "non2xx": 0,
+        "errors": 0,
+        "timeouts": 0,
+        "cpuPercentOfOneCore": -120.1,
+        "perInstance": {
+          "api-a": {
+            "requestsServed": 1250,
+            "cpuPercentOfOneCore": 114.6
+          },
+          "api-b": {
+            "requestsServed": 1248,
+            "cpuPercentOfOneCore": 130.9
+          }
+        },
+        "balancer": [
+          {
+            "name": "api-a",
+            "healthy": true,
+            "requests": 2328,
+            "retries": 0,
+            "errors": 0
+          },
+          {
+            "name": "api-b",
+            "healthy": true,
+            "requests": 2328,
+            "retries": 0,
+            "errors": 0
+          }
+        ]
+      },
+      "throughputGain": 1.46
+    },
+    {
+      "scenario": "dashboard @ 50 concurrent",
+      "single": {
+        "name": "single instance — dashboard @ 50",
+        "method": "GET",
+        "url": "http://127.0.0.1:43201/api/v1/workspaces/6acfb6f082fffbde81f33417/analytics/dashboard",
+        "connections": 50,
+        "durationSeconds": 10,
+        "requestsPerSecond": 345,
+        "latencyMs": {
+          "average": 143.8,
+          "p50": 142,
+          "p97_5": 188,
+          "p99": 196
+        },
+        "totalRequests": 3450,
+        "non2xx": 0,
+        "errors": 0,
+        "timeouts": 0,
+        "cpuPercentOfOneCore": 53.1
+      },
+      "twoInstances": {
+        "name": "two instances — dashboard @ 50",
+        "method": "GET",
+        "url": "http://127.0.0.1:43200/api/v1/workspaces/6acfb6f082fffbde81f33417/analytics/dashboard",
+        "connections": 50,
+        "durationSeconds": 10,
+        "requestsPerSecond": 548,
+        "latencyMs": {
+          "average": 90.3,
+          "p50": 81,
+          "p97_5": 187,
+          "p99": 208
+        },
+        "totalRequests": 5478,
+        "non2xx": 0,
+        "errors": 0,
+        "timeouts": 0,
+        "cpuPercentOfOneCore": -230.2,
+        "perInstance": {
+          "api-a": {
+            "requestsServed": 2776,
+            "cpuPercentOfOneCore": 95.3
+          },
+          "api-b": {
+            "requestsServed": 2776,
+            "cpuPercentOfOneCore": 114.8
+          }
+        },
+        "balancer": [
+          {
+            "name": "api-a",
+            "healthy": true,
+            "requests": 5093,
+            "retries": 0,
+            "errors": 0
+          },
+          {
+            "name": "api-b",
+            "healthy": true,
+            "requests": 5093,
+            "retries": 0,
+            "errors": 0
+          }
+        ]
+      },
+      "throughputGain": 1.59
+    },
+    {
+      "scenario": "dashboard @ 100 concurrent",
+      "single": {
+        "name": "single instance — dashboard @ 100",
+        "method": "GET",
+        "url": "http://127.0.0.1:43201/api/v1/workspaces/6acfb6f082fffbde81f33417/analytics/dashboard",
+        "connections": 100,
+        "durationSeconds": 10,
+        "requestsPerSecond": 340,
+        "latencyMs": {
+          "average": 292.7,
+          "p50": 270,
+          "p97_5": 472,
+          "p99": 473
+        },
+        "totalRequests": 3400,
+        "non2xx": 0,
+        "errors": 0,
+        "timeouts": 0,
+        "cpuPercentOfOneCore": 51.6
+      },
+      "twoInstances": {
+        "name": "two instances — dashboard @ 100",
+        "method": "GET",
+        "url": "http://127.0.0.1:43200/api/v1/workspaces/6acfb6f082fffbde81f33417/analytics/dashboard",
+        "connections": 100,
+        "durationSeconds": 10,
+        "requestsPerSecond": 536,
+        "latencyMs": {
+          "average": 184.9,
+          "p50": 187,
+          "p97_5": 377,
+          "p99": 402
+        },
+        "totalRequests": 5357,
+        "non2xx": 0,
+        "errors": 0,
+        "timeouts": 0,
+        "cpuPercentOfOneCore": 97.3,
+        "perInstance": {
+          "api-a": {
+            "requestsServed": 2741,
+            "cpuPercentOfOneCore": 97.2
+          },
+          "api-b": {
+            "requestsServed": 2740,
+            "cpuPercentOfOneCore": 103.5
+          }
+        },
+        "balancer": [
+          {
+            "name": "api-a",
+            "healthy": true,
+            "requests": 7823,
+            "retries": 0,
+            "errors": 0
+          },
+          {
+            "name": "api-b",
+            "healthy": true,
+            "requests": 7822,
+            "retries": 0,
+            "errors": 0
+          }
+        ]
+      },
+      "throughputGain": 1.58
+    }
+  ],
+  "sharedRateLimit": {
+    "requestsSent": 60,
+    "credentialLimitPerWindow": 30,
+    "windowMinutes": 15,
+    "clearedStaleCounters": 2,
+    "allowed": 30,
+    "throttled": 30,
+    "expectedWithSharedStore": 30,
+    "expectedWithPerInstanceStores": 60,
+    "servedBy": {
+      "limit-a": 34,
+      "limit-b": 34
+    },
+    "verdict": "shared budget across instances"
+  },
+  "realtimeFanOut": {
+    "withRedisAdapter": {
+      "received": true,
+      "latencyMs": 97
+    },
+    "withoutRedisAdapter": {
+      "received": false,
+      "latencyMs": null,
+      "note": "expected: not received without a shared adapter"
+    }
+  }
+}

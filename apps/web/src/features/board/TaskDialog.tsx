@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { CalendarDays, Tags, UserPlus } from 'lucide-react'
-import { useState, type FormEvent, type ReactElement } from 'react'
+import { useEffect, useState, type FormEvent, type ReactElement } from 'react'
 import {
   PRIORITY_LABELS,
   TASK_PRIORITIES,
@@ -16,7 +16,13 @@ import { qk } from '@/lib/query'
 import { toast } from 'sonner'
 import { Avatar } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
 import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
@@ -25,7 +31,13 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
 import { useWorkspace } from '@/hooks/useWorkspace'
 
@@ -63,6 +75,20 @@ function TaskDialogForm({
   const [dueDate, setDueDate] = useState(task?.dueDate ? task.dueDate.slice(0, 10) : '')
   const [error, setError] = useState<string | null>(null)
 
+  // Board payloads omit descriptions (payload size). Hydrate the full task before
+  // editing so saving can never wipe a description the list never carried.
+  const needsDescription = Boolean(task) && task?.description === undefined
+  const detailQuery = useQuery({
+    queryKey: qk.task(task?.id),
+    queryFn: () => api.get<{ task: TaskDTO }>(`/tasks/${task!.id}`),
+    enabled: needsDescription,
+  })
+  useEffect(() => {
+    const hydrated = detailQuery.data?.task
+    if (hydrated?.description !== undefined) setDescription(hydrated.description)
+  }, [detailQuery.data])
+  const descriptionReady = !needsDescription || Boolean(detailQuery.data)
+
   const membersQuery = useQuery({
     queryKey: qk.members(workspace.id),
     queryFn: () => api.get<{ data: MemberDTO[] }>(`/workspaces/${workspace.id}/members`),
@@ -84,7 +110,11 @@ function TaskDialogForm({
           .slice(0, 10),
         dueDate: dueDate ? new Date(`${dueDate}T12:00:00.000Z`).toISOString() : null,
       }
-      if (task) return api.patch<{ task: TaskDTO }>(`/tasks/${task.id}`, { ...payload, version: task.version })
+      if (task)
+        return api.patch<{ task: TaskDTO }>(`/tasks/${task.id}`, {
+          ...payload,
+          version: task.version,
+        })
       return api.post<{ task: TaskDTO }>(`/projects/${projectId}/tasks`, payload)
     },
     onSuccess: (payload) => {
@@ -96,7 +126,9 @@ function TaskDialogForm({
     },
     onError: (err) => {
       if (err instanceof ApiError && err.code === 'VERSION_CONFLICT') {
-        setError('This task changed while you were editing — close and reopen to see the latest version.')
+        setError(
+          'This task changed while you were editing — close and reopen to see the latest version.',
+        )
         void queryClient.invalidateQueries({ queryKey: qk.task(task?.id) })
         void queryClient.invalidateQueries({ queryKey: qk.tasksRoot })
         return
@@ -210,7 +242,12 @@ function TaskDialogForm({
                     )
                   }
                 >
-                  <Avatar name={member.name} src={member.avatarUrl} seed={member.userId} className="h-5 w-5" />
+                  <Avatar
+                    name={member.name}
+                    src={member.avatarUrl}
+                    seed={member.userId}
+                    className="h-5 w-5"
+                  />
                   <span className="truncate">{member.name}</span>
                 </DropdownMenuCheckboxItem>
               ))}
@@ -268,8 +305,14 @@ function TaskDialogForm({
           <Button type="button" variant="ghost" onClick={onClose}>
             Cancel
           </Button>
-          <Button type="submit" disabled={save.isPending}>
-            {save.isPending ? 'Saving…' : task ? 'Save changes' : 'Create task'}
+          <Button type="submit" disabled={save.isPending || !descriptionReady}>
+            {save.isPending
+              ? 'Saving…'
+              : !descriptionReady
+                ? 'Loading…'
+                : task
+                  ? 'Save changes'
+                  : 'Create task'}
           </Button>
         </div>
       </div>

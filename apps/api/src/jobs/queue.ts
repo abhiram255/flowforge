@@ -3,7 +3,11 @@ import { Queue } from 'bullmq'
 import { logger } from '../config/logger'
 import { getRedisClient } from '../config/redis'
 import type { MailMessage } from '../lib/mailer'
-import { processDeliverNotifications, processSendEmail, type NotificationDeliveryItem } from './processors'
+import {
+  processDeliverNotifications,
+  processSendEmail,
+  type NotificationDeliveryItem,
+} from './processors'
 
 export interface JobPayloads {
   'send-email': MailMessage
@@ -12,7 +16,18 @@ export interface JobPayloads {
 
 export type JobName = keyof JobPayloads
 
-const QUEUE_NAME = 'flowforge-jobs'
+export const QUEUE_NAME = 'flowforge-jobs'
+
+/** Retry/backoff policy shared by the application queue and the experiment harness. */
+export const JOB_DEFAULT_OPTIONS = {
+  attempts: 3,
+  backoff: { type: 'exponential' as const, delay: 1000 },
+  removeOnComplete: 1000,
+  removeOnFail: 5000,
+}
+
+/** How many jobs one worker processes in parallel. */
+export const WORKER_CONCURRENCY = 5
 
 let queue: Queue | null = null
 let worker: Worker | null = null
@@ -22,12 +37,7 @@ export function initQueues(): void {
   if (!connection || queue) return
   queue = new Queue(QUEUE_NAME, {
     connection,
-    defaultJobOptions: {
-      attempts: 3,
-      backoff: { type: 'exponential', delay: 1000 },
-      removeOnComplete: 1000,
-      removeOnFail: 5000,
-    },
+    defaultJobOptions: JOB_DEFAULT_OPTIONS,
   })
   logger.info('BullMQ job queue initialised')
 }
@@ -44,7 +54,7 @@ export function startWorkers(): void {
         await processDeliverNotifications(job.data as { items: NotificationDeliveryItem[] })
       }
     },
-    { connection, concurrency: 5 },
+    { connection, concurrency: WORKER_CONCURRENCY },
   )
   worker.on('failed', (job, err) => logger.warn({ job: job?.name, err: err.message }, 'job failed'))
   logger.info('BullMQ workers started')
@@ -60,7 +70,10 @@ export async function enqueue<K extends JobName>(name: K, payload: JobPayloads[K
       await queue.add(name, payload)
       return
     } catch (error) {
-      logger.warn({ err: (error as Error).message, job: name }, 'queue unavailable — processing inline')
+      logger.warn(
+        { err: (error as Error).message, job: name },
+        'queue unavailable — processing inline',
+      )
     }
   }
   if (name === 'send-email') await processSendEmail(payload as MailMessage)

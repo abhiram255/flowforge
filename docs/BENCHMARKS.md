@@ -60,6 +60,15 @@ is **refused when `NODE_ENV=production`**.
 | Dashboard snapshot (20 s cache) | 50 | 260 rps | 179 ms | 247 ms | 672 ms | 0 |
 | Task creation (write + OCC) | 20 | 98 rps | 202 ms | 278 ms | 280 ms | 0 |
 
+> **Update — scalability pass (2026-10-14).** The table above is the original single-process smoke
+> test, kept as the historical record. The follow-up work in
+> [SCALABILITY_EXPERIMENTS.md](./SCALABILITY_EXPERIMENTS.md) re-ran these paths and improved them
+> substantially — analytics @ 50 conns **100 → 413 rps** (p97.5 1576 → 173 ms), dashboard @ 50
+> **175 → 355 rps**, task creation @ 20 **62 → 112 rps**, board @ 100 **139 → 190 rps** (and the board
+> now returns *all* the project's tasks instead of the first 25) — through cache single-flight, a
+> trimmed board payload, access caching, extra indexes, a shared rate-limit store and a Socket.IO
+> Redis adapter. Raw artifacts: `docs/experiments/`.
+
 ### How to read this honestly
 
 - **Service time at low concurrency** (10 conns) was p97.5 ≈ 104 ms — inside the 300 ms engineering
@@ -76,14 +85,16 @@ is **refused when `NODE_ENV=production`**.
   gzip effort from level 6 → 1 cut compression CPU. Measured effect on the 10-connection scenario:
   136 → 156 rps (+15%) and p97.5 119 ms → 104 ms.
 
-### Documented remediation path (not implemented here)
+### Documented remediation path (partially implemented in the scalability pass)
 
 1. Run the load generator on a separate machine (removes CPU contention from the numbers).
-2. Horizontal scale behind a load balancer — the API is stateless apart from socket rooms; enabling
-   Redis makes the cache/queue shared, and Socket.IO needs a Redis adapter for cross-instance rooms.
-3. Trim the board payload (omit `description` from list views) — real boards carry long descriptions
-   that dominate serialisation time.
-4. Read analytics from a MongoDB secondary; keep writes on the primary.
+   — *partially done: the generator now runs as its own process, but the machine is still shared.*
+2. Horizontal scale behind a load balancer — **implemented and measured** (two instances → 1.46–1.59×
+   throughput at equal or better tail latency, shared Redis rate-limit store, Socket.IO Redis adapter
+   so rooms and events span replicas; presence counts via `fetchSockets()`). See Experiment 4.
+3. Trim the board payload (omit `description` from list views) — **implemented**; the edit dialog
+   hydrates the full task before saving so long descriptions are never overwritten. See Experiment 1.
+4. Read analytics from a MongoDB secondary; keep writes on the primary. — still open.
 
 ---
 
@@ -112,9 +123,12 @@ section 2, so the run reports where the single instance breaks rather than flatt
 
 | Plan target | Status | Evidence |
 | --- | --- | --- |
-| p95 < 300 ms on workspace reads | ✅ at 10 conns (104 ms) · ❌ at 100 conns (867 ms, saturation documented) | `load-smoke-results.json` |
+| p95 < 300 ms on workspace reads | ✅ at 10 conns (all paths) and 50 conns (projects 245 ms, dashboard 214 ms) · ⚠️ board single-instance 489/667 ms at 50/100 conns (saturation documented) · ✅ 2.6× p97.5 improvement at 100 conns vs baseline | `load-smoke-results.json`, `docs/experiments/exp1-*.json` |
 | Test at 100 / 500 / 1000 concurrent users | ⚠️ 10 / 50 / 100 tested locally; higher tiers require the remediation path above | `load-smoke-results.json`, k6 script |
 | Tenant isolation: zero unauthorised accesses | ✅ 11 attack cases in the test suite, all rejected (404/403 as designed) | `tenancy.test.ts` |
 | 100% of critical E2E workflows passing | ✅ in CI (`playwright` job); runnable locally with `npm run e2e` | `.github/workflows/ci.yml` |
-| Indexed vs unindexed query performance documented | ✅ 10× p95, 20,000 → 40 docs examined | `benchmark-results.json` |
-| No lost committed updates under tested concurrency | ✅ OCC race test: two same-version writes produce exactly one winner and one 409 | `tasks.test.ts` |
+| Indexed vs unindexed query performance documented | ✅ 10× p95, 20,000 → 40 docs examined; at 400k documents 88–229× p95 across query shapes | `benchmark-results.json`, `docs/experiments/exp2-database.json` |
+| No lost committed updates under tested concurrency | ✅ OCC race test, plus 20 same-version flights and 15 retried updates with zero lost writes or duplicate events | `tasks.test.ts`, `docs/experiments/exp5-concurrency.json` |
+| Zero failed requests through a rolling restart | ✅ graceful restart mid-load: 0 errors / 0 non-2xx; hard crash: 0 client-visible errors | `docs/experiments/exp6-resilience.json` |
+| No jobs lost when a worker dies | ✅ 20/20 jobs completed after the worker was killed mid-flight | `docs/experiments/exp6-resilience.json` |
+| Shared state across replicas | ✅ 30/60 logins throttled under one shared budget; cross-instance realtime event in 97 ms | `docs/experiments/exp4-horizontal.json` |

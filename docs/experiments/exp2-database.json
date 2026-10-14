@@ -1,0 +1,323 @@
+{
+  "experiment": 2,
+  "generatedAt": "2026-10-14T15:53:19.064Z",
+  "environment": {
+    "machine": "Intel(R) Core(TM) i9-10885H CPU @ 2.40GHz (16 logical cores)",
+    "node": "v22.17.1",
+    "mongodb": "flowforge_exp2",
+    "dataset": {
+      "tasks": 200000,
+      "activityRecords": 200000,
+      "workspaces": 4,
+      "projects": 20,
+      "documents": 400000
+    },
+    "indexBuildMs": 6161,
+    "methodology": "Raw driver queries against a scratch database with the application query shapes. explain executionStats supplies docsExamined / keysExamined / nReturned; p50/p95/p99 are wall-clock driver timings (20 iterations, 5 warmups, 10 for the deep-skip shape). \"Without indexes\" runs before any index exists (collection scans); \"with indexes\" runs after the application index set is built."
+  },
+  "indexSet": [
+    {
+      "name": "board",
+      "keys": {
+        "workspaceId": 1,
+        "projectId": 1,
+        "status": 1,
+        "position": 1
+      }
+    },
+    {
+      "name": "mine",
+      "keys": {
+        "workspaceId": 1,
+        "assigneeIds": 1,
+        "status": 1,
+        "dueDate": 1
+      }
+    },
+    {
+      "name": "cursor",
+      "keys": {
+        "workspaceId": 1,
+        "createdAt": -1,
+        "_id": -1
+      }
+    },
+    {
+      "name": "completed",
+      "keys": {
+        "workspaceId": 1,
+        "status": 1,
+        "completedAt": -1
+      }
+    },
+    {
+      "name": "dueDate",
+      "keys": {
+        "workspaceId": 1,
+        "dueDate": 1
+      }
+    }
+  ],
+  "withoutIndexes": {
+    "board": {
+      "label": "board read (indexed sort, limit 100)",
+      "iterations": 20,
+      "p50Ms": 189.277,
+      "p95Ms": 371.236,
+      "p99Ms": 371.236,
+      "docsExamined": 200000,
+      "keysExamined": 0,
+      "nReturned": 100,
+      "indexUsed": "COLLSCAN"
+    },
+    "myTasks": {
+      "label": "\"my tasks\" (assignee + status, limit 8)",
+      "iterations": 20,
+      "p50Ms": 234.112,
+      "p95Ms": 403.014,
+      "p99Ms": 403.014,
+      "docsExamined": 200000,
+      "keysExamined": 0,
+      "nReturned": 8,
+      "indexUsed": "COLLSCAN"
+    },
+    "overdue": {
+      "label": "overdue count shape (workspace, not done, due date)",
+      "iterations": 20,
+      "p50Ms": 208.605,
+      "p95Ms": 290.591,
+      "p99Ms": 290.591,
+      "docsExamined": 200000,
+      "keysExamined": 0,
+      "nReturned": 25,
+      "indexUsed": "COLLSCAN"
+    },
+    "completed": {
+      "label": "completed-this-week (workspace, done, completedAt)",
+      "iterations": 20,
+      "p50Ms": 207.087,
+      "p95Ms": 279.59,
+      "p99Ms": 279.59,
+      "docsExamined": 200000,
+      "keysExamined": 0,
+      "nReturned": 25,
+      "indexUsed": "COLLSCAN"
+    },
+    "deepSkip": {
+      "label": "deep pagination — skip(25k)",
+      "iterations": 10,
+      "p50Ms": 259.045,
+      "p95Ms": 328.024,
+      "p99Ms": 328.024,
+      "docsExamined": 200000,
+      "keysExamined": 0,
+      "nReturned": 25,
+      "indexUsed": "COLLSCAN"
+    },
+    "cursorPage": {
+      "label": "deep pagination — cursor",
+      "iterations": 20,
+      "p50Ms": 429.827,
+      "p95Ms": 638.049,
+      "p99Ms": 638.049,
+      "docsExamined": 200000,
+      "keysExamined": 0,
+      "nReturned": 25,
+      "indexUsed": "COLLSCAN"
+    },
+    "cycleTime": {
+      "label": "cycle-time aggregation (done tasks)",
+      "iterations": 10,
+      "p50Ms": 192.831,
+      "p95Ms": 229.752,
+      "p99Ms": 229.752,
+      "docsExamined": null,
+      "keysExamined": null,
+      "nReturned": null,
+      "indexUsed": null
+    },
+    "activityFeed": {
+      "label": "activity feed (workspace, newest first)",
+      "iterations": 20,
+      "p50Ms": 234.21,
+      "p95Ms": 330.944,
+      "p99Ms": 330.944,
+      "docsExamined": 200000,
+      "keysExamined": 0,
+      "nReturned": 25,
+      "indexUsed": "COLLSCAN"
+    }
+  },
+  "withIndexes": {
+    "board": {
+      "label": "board read (indexed sort, limit 100)",
+      "iterations": 20,
+      "p50Ms": 3.194,
+      "p95Ms": 4.217,
+      "p99Ms": 4.217,
+      "docsExamined": 100,
+      "keysExamined": 100,
+      "nReturned": 100,
+      "indexUsed": "board"
+    },
+    "myTasks": {
+      "label": "\"my tasks\" (assignee + status, limit 8)",
+      "iterations": 20,
+      "p50Ms": 17.721,
+      "p95Ms": 24.726,
+      "p99Ms": 24.726,
+      "docsExamined": 4000,
+      "keysExamined": 4002,
+      "nReturned": 8,
+      "indexUsed": "mine"
+    },
+    "overdue": {
+      "label": "overdue count shape (workspace, not done, due date)",
+      "iterations": 20,
+      "p50Ms": 1.588,
+      "p95Ms": 2.048,
+      "p99Ms": 2.048,
+      "docsExamined": 31,
+      "keysExamined": 31,
+      "nReturned": 25,
+      "indexUsed": "dueDate"
+    },
+    "completed": {
+      "label": "completed-this-week (workspace, done, completedAt)",
+      "iterations": 20,
+      "p50Ms": 1.589,
+      "p95Ms": 2.16,
+      "p99Ms": 2.16,
+      "docsExamined": 25,
+      "keysExamined": 25,
+      "nReturned": 25,
+      "indexUsed": "completed"
+    },
+    "deepSkip": {
+      "label": "deep pagination — skip(25k)",
+      "iterations": 10,
+      "p50Ms": 38.659,
+      "p95Ms": 69.755,
+      "p99Ms": 69.755,
+      "docsExamined": 25,
+      "keysExamined": 25025,
+      "nReturned": 25,
+      "indexUsed": "cursor"
+    },
+    "cursorPage": {
+      "label": "deep pagination — cursor",
+      "iterations": 20,
+      "p50Ms": 2.085,
+      "p95Ms": 2.783,
+      "p99Ms": 2.783,
+      "docsExamined": 25,
+      "keysExamined": 25,
+      "nReturned": 25,
+      "indexUsed": null
+    },
+    "cycleTime": {
+      "label": "cycle-time aggregation (done tasks)",
+      "iterations": 10,
+      "p50Ms": 32.644,
+      "p95Ms": 40.471,
+      "p99Ms": 40.471,
+      "docsExamined": null,
+      "keysExamined": null,
+      "nReturned": null,
+      "indexUsed": null
+    },
+    "activityFeed": {
+      "label": "activity feed (workspace, newest first)",
+      "iterations": 20,
+      "p50Ms": 1.707,
+      "p95Ms": 2.969,
+      "p99Ms": 2.969,
+      "docsExamined": 25,
+      "keysExamined": 25,
+      "nReturned": 25,
+      "indexUsed": "feed"
+    }
+  },
+  "comparisons": [
+    {
+      "query": "board read (indexed sort, limit 100)",
+      "p95BeforeMs": 371.236,
+      "p95AfterMs": 4.217,
+      "p95Speedup": 88.03,
+      "docsExaminedBefore": 200000,
+      "docsExaminedAfter": 100,
+      "docsExaminedReduction": 2000,
+      "indexUsed": "board"
+    },
+    {
+      "query": "\"my tasks\" (assignee + status, limit 8)",
+      "p95BeforeMs": 403.014,
+      "p95AfterMs": 24.726,
+      "p95Speedup": 16.3,
+      "docsExaminedBefore": 200000,
+      "docsExaminedAfter": 4000,
+      "docsExaminedReduction": 50,
+      "indexUsed": "mine"
+    },
+    {
+      "query": "overdue count shape (workspace, not done, due date)",
+      "p95BeforeMs": 290.591,
+      "p95AfterMs": 2.048,
+      "p95Speedup": 141.89,
+      "docsExaminedBefore": 200000,
+      "docsExaminedAfter": 31,
+      "docsExaminedReduction": 6451.61,
+      "indexUsed": "dueDate"
+    },
+    {
+      "query": "completed-this-week (workspace, done, completedAt)",
+      "p95BeforeMs": 279.59,
+      "p95AfterMs": 2.16,
+      "p95Speedup": 129.44,
+      "docsExaminedBefore": 200000,
+      "docsExaminedAfter": 25,
+      "docsExaminedReduction": 8000,
+      "indexUsed": "completed"
+    },
+    {
+      "query": "deep pagination — skip(25k)",
+      "p95BeforeMs": 328.024,
+      "p95AfterMs": 69.755,
+      "p95Speedup": 4.7,
+      "docsExaminedBefore": 200000,
+      "docsExaminedAfter": 25,
+      "docsExaminedReduction": 8000,
+      "indexUsed": "cursor"
+    },
+    {
+      "query": "deep pagination — cursor",
+      "p95BeforeMs": 638.049,
+      "p95AfterMs": 2.783,
+      "p95Speedup": 229.27,
+      "docsExaminedBefore": 200000,
+      "docsExaminedAfter": 25,
+      "docsExaminedReduction": 8000,
+      "indexUsed": null
+    },
+    {
+      "query": "cycle-time aggregation (done tasks)",
+      "p95BeforeMs": 229.752,
+      "p95AfterMs": 40.471,
+      "p95Speedup": 5.68,
+      "docsExaminedBefore": null,
+      "docsExaminedAfter": null,
+      "docsExaminedReduction": null,
+      "indexUsed": null
+    },
+    {
+      "query": "activity feed (workspace, newest first)",
+      "p95BeforeMs": 330.944,
+      "p95AfterMs": 2.969,
+      "p95Speedup": 111.47,
+      "docsExaminedBefore": 200000,
+      "docsExaminedAfter": 25,
+      "docsExaminedReduction": 8000,
+      "indexUsed": "feed"
+    }
+  ]
+}

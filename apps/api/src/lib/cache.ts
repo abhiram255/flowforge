@@ -1,4 +1,6 @@
+import { env } from '../config/env'
 import { getCacheBackend, getRedisClient } from '../config/redis'
+import { cacheCoalescedTotal, cacheHitsTotal, cacheMissesTotal } from './metrics'
 
 interface MemoryEntry {
   value: string
@@ -7,11 +9,21 @@ interface MemoryEntry {
 
 const memoryStore = new Map<string, MemoryEntry>()
 
+/**
+ * In-flight producers keyed by cache key. On a cold key, concurrent requests
+ * join the existing producer instead of every one of them stampeding the
+ * database (measured in Experiment 3).
+ */
+const inflight = new Map<string, Promise<unknown>>()
+
+const namespaceOf = (key: string): string => key.split(':')[1] ?? 'other'
+
 async function get<T>(key: string): Promise<T | null> {
   const redis = getRedisClient()
   if (redis) {
     try {
       const raw = await redis.get(key)
+      if (raw) cacheHitsTotal.inc({ namespace: namespaceOf(key) })
       return raw ? (JSON.parse(raw) as T) : null
     } catch {
       return null
@@ -23,6 +35,7 @@ async function get<T>(key: string): Promise<T | null> {
     memoryStore.delete(key)
     return null
   }
+  cacheHitsTotal.inc({ namespace: namespaceOf(key) })
   return JSON.parse(entry.value) as T
 }
 
@@ -73,13 +86,39 @@ async function delPrefix(prefix: string): Promise<void> {
   }
 }
 
-/** Read-through cache: returns the cached value or produces, stores and returns it. */
+/**
+ * Read-through cache: returns the cached value or produces, stores and returns it.
+ *
+ * Misses are single-flight per process: concurrent requests for a cold key share
+ * one producer, and only that producer counts as a cache miss (database work).
+ */
 async function wrap<T>(key: string, ttlSeconds: number, producer: () => Promise<T>): Promise<T> {
+  const namespace = namespaceOf(key)
+  if (env.CACHE_DISABLED) {
+    cacheMissesTotal.inc({ namespace })
+    return producer()
+  }
+
   const cached = await get<T>(key)
   if (cached !== null) return cached
-  const value = await producer()
-  await set(key, value, ttlSeconds)
-  return value
+
+  const pending = inflight.get(key)
+  if (pending) {
+    cacheCoalescedTotal.inc({ namespace })
+    return (await pending) as T
+  }
+
+  cacheMissesTotal.inc({ namespace })
+  const run = producer()
+    .then(async (value) => {
+      await set(key, value, ttlSeconds)
+      return value
+    })
+    .finally(() => {
+      inflight.delete(key)
+    })
+  inflight.set(key, run)
+  return run
 }
 
 export const cache = {
@@ -92,10 +131,14 @@ export const cache = {
 }
 
 export const cacheKeys = {
-  workspaceAnalytics: (workspaceId: string, rangeDays: number) => `ff:analytics:${workspaceId}:${rangeDays}`,
-  workspaceDashboard: (workspaceId: string, userId: string) => `ff:dashboard:${workspaceId}:${userId}`,
+  workspaceAnalytics: (workspaceId: string, rangeDays: number) =>
+    `ff:analytics:${workspaceId}:${rangeDays}`,
+  workspaceDashboard: (workspaceId: string, userId: string) =>
+    `ff:dashboard:${workspaceId}:${userId}`,
   workspaceUserMinis: (workspaceId: string) => `ff:usersmini:${workspaceId}`,
   membership: (workspaceId: string, userId: string) => `ff:membership:${workspaceId}:${userId}`,
+  workspaceByRef: (ref: string) => `ff:wsref:${ref}`,
+  userExists: (userId: string) => `ff:userexists:${userId}`,
   workspaceAnalyticsPrefix: (workspaceId: string) => `ff:analytics:${workspaceId}:`,
   workspaceDashboardPrefix: (workspaceId: string) => `ff:dashboard:${workspaceId}:`,
   workspaceUserMinisPrefix: (workspaceId: string) => `ff:usersmini:${workspaceId}`,

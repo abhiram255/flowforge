@@ -38,16 +38,34 @@ export async function recordActivity(
       entityId: String(input.entityId),
     })
   } catch (error) {
-    logger.warn({ err: (error as Error).message, action: input.action }, 'failed to record activity')
+    logger.warn(
+      { err: (error as Error).message, action: input.action },
+      'failed to record activity',
+    )
   }
 }
 
 /** Busts the workspace's cached snapshots after writes. */
-export async function invalidateWorkspaceCaches(workspaceId: Types.ObjectId | string): Promise<void> {
+export async function invalidateWorkspaceCaches(
+  workspaceId: Types.ObjectId | string,
+): Promise<void> {
   const id = String(workspaceId)
   await Promise.all([
     cache.delPrefix(`ff:analytics:${id}:`),
     cache.delPrefix(`ff:dashboard:${id}:`),
     cache.delPrefix(`ff:usersmini:${id}`),
   ])
+}
+
+/**
+ * Busts the cached workspace document and per-user memberships.
+ *
+ * Called only when workspace metadata or memberships change (never on task
+ * writes), so the short-TTL access cache is not churned by ordinary traffic.
+ */
+export async function invalidateWorkspaceAccess(
+  workspaceId: Types.ObjectId | string,
+): Promise<void> {
+  const id = String(workspaceId)
+  await Promise.all([cache.delPrefix(`ff:membership:${id}:`), cache.delPrefix('ff:wsref:')])
 }

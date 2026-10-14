@@ -33,7 +33,8 @@ type UserMiniSource = Pick<UserDoc, 'name' | 'avatarUrl'> & { _id: IdLike }
 const id = (value: IdLike): string => String(value)
 const iso = (value: Date | null | undefined): string | null =>
   value ? new Date(value).toISOString() : null
-const isoRequired = (value: Date | null | undefined): string => iso(value) ?? new Date(0).toISOString()
+const isoRequired = (value: Date | null | undefined): string =>
+  iso(value) ?? new Date(0).toISOString()
 
 export const toUserMini = (user: UserMiniSource): UserMiniDTO => ({
   id: id(user._id),
@@ -123,6 +124,8 @@ export const toTaskDTO = (
     subtaskCount?: number
     attachmentCount?: number
     commentCount?: number
+    /** List/board views omit the (up to 20k character) description to keep payloads small. */
+    includeDescription?: boolean
   },
 ): TaskDTO => ({
   id: id(task._id),
@@ -132,7 +135,7 @@ export const toTaskDTO = (
   projectName: extras?.project?.name ?? '',
   key: task.key,
   title: task.title,
-  description: task.description ?? '',
+  ...(extras?.includeDescription === false ? {} : { description: task.description ?? '' }),
   status: task.status,
   priority: task.priority,
   assignees: (extras?.assignees ?? []).map(toUserMini),
@@ -174,7 +177,10 @@ export const toAttachmentDTO = (
   createdAt: isoRequired(attachment.createdAt),
 })
 
-export const toActivityDTO = (activity: ActivityLogDoc, actor?: UserMiniSource | null): ActivityDTO => ({
+export const toActivityDTO = (
+  activity: ActivityLogDoc,
+  actor?: UserMiniSource | null,
+): ActivityDTO => ({
   id: id(activity._id),
   actor: actor ? toUserMini(actor) : null,
   action: activity.action,
@@ -201,7 +207,10 @@ export const toNotificationDTO = (
   createdAt: isoRequired(notification.createdAt),
 })
 
-export const toSessionDTO = (session: SessionDoc, currentSessionId?: string | null): SessionDTO => ({
+export const toSessionDTO = (
+  session: SessionDoc,
+  currentSessionId?: string | null,
+): SessionDTO => ({
   id: id(session._id),
   userAgent: session.userAgent ?? null,
   ip: session.ip ?? null,

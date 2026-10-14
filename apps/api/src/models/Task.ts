@@ -1,5 +1,10 @@
 import { Schema, model, type Types } from 'mongoose'
-import { TASK_PRIORITIES, TASK_STATUSES, type TaskPriority, type TaskStatus } from '@flowforge/shared'
+import {
+  TASK_PRIORITIES,
+  TASK_STATUSES,
+  type TaskPriority,
+  type TaskStatus,
+} from '@flowforge/shared'
 
 export interface TaskDoc {
   _id: Types.ObjectId
@@ -55,6 +60,10 @@ taskSchema.index({ workspaceId: 1, assigneeIds: 1, status: 1, dueDate: 1 })
 taskSchema.index({ workspaceId: 1, parentTaskId: 1, createdAt: -1 })
 /** Cursor-paginated feeds. */
 taskSchema.index({ workspaceId: 1, createdAt: -1, _id: -1 })
+/** Analytics + dashboard completions (trend, cycle time, "completed this week"). */
+taskSchema.index({ workspaceId: 1, status: 1, completedAt: -1 })
+/** Overdue counts and upcoming-deadline reads. */
+taskSchema.index({ workspaceId: 1, dueDate: 1 })
 /** Full-text search within a workspace. */
 taskSchema.index({ workspaceId: 1, title: 'text', description: 'text' })
 

@@ -12,7 +12,11 @@ import {
   type WorkspaceDTO,
 } from '@flowforge/shared'
 import { env } from '../../config/env'
-import { invalidateWorkspaceCaches, recordActivity } from '../../lib/activity'
+import {
+  invalidateWorkspaceAccess,
+  invalidateWorkspaceCaches,
+  recordActivity,
+} from '../../lib/activity'
 import type { WorkspaceContext } from '../../lib/context'
 import { AppError } from '../../lib/errors'
 import { hasAtLeast } from '../../lib/permissions'
@@ -33,7 +37,9 @@ import { Workspace, type WorkspaceDoc } from '../../models/Workspace'
 import { getStorageDriver } from '../../config/storage'
 import { notify } from '../notifications/notifications.service'
 
-async function workspaceStats(workspaceId: Types.ObjectId): Promise<{ memberCount: number; projectCount: number }> {
+async function workspaceStats(
+  workspaceId: Types.ObjectId,
+): Promise<{ memberCount: number; projectCount: number }> {
   const [memberCount, projectCount] = await Promise.all([
     Membership.countDocuments({ workspaceId }),
     Project.countDocuments({ workspaceId, status: 'active' }),
@@ -47,7 +53,9 @@ export async function listWorkspaces(userId: string): Promise<WorkspaceDTO[]> {
   const workspaceIds = memberships.map((membership) => membership.workspaceId)
 
   const [workspaces, memberCounts, projectCounts] = await Promise.all([
-    Workspace.find({ _id: { $in: workspaceIds } }).sort({ createdAt: 1 }).lean<WorkspaceDoc[]>(),
+    Workspace.find({ _id: { $in: workspaceIds } })
+      .sort({ createdAt: 1 })
+      .lean<WorkspaceDoc[]>(),
     Membership.aggregate<{ _id: Types.ObjectId; count: number }>([
       { $match: { workspaceId: { $in: workspaceIds } } },
       { $group: { _id: '$workspaceId', count: { $sum: 1 } } },
@@ -70,14 +78,18 @@ export async function listWorkspaces(userId: string): Promise<WorkspaceDTO[]> {
   )
 }
 
-export async function createWorkspace(userId: string, input: CreateWorkspaceInput): Promise<WorkspaceDTO> {
+export async function createWorkspace(
+  userId: string,
+  input: CreateWorkspaceInput,
+): Promise<WorkspaceDTO> {
   const name = input.name.trim()
   let slug = input.slug ?? slugify(name) ?? ''
   if (!slug) slug = `ws-${randomUUID().slice(0, 8)}`
 
   const taken = await Workspace.findOne({ slug }).select('_id').lean()
   if (taken) {
-    if (input.slug) throw AppError.conflict('That workspace URL is already taken', ERROR_CODES.DUPLICATE)
+    if (input.slug)
+      throw AppError.conflict('That workspace URL is already taken', ERROR_CODES.DUPLICATE)
     slug = `${slug}-${randomBytes(2).toString('hex')}`
   }
 
@@ -135,6 +147,8 @@ export async function updateWorkspace(
     entityId: ctx.workspace._id,
     metadata: { fields: Object.keys(set) },
   })
+  // The workspace document (and possibly its slug) changed — refresh access caches.
+  await invalidateWorkspaceAccess(ctx.workspace._id)
   const stats = await workspaceStats(ctx.workspace._id)
   return toWorkspaceDTO(updated, ctx.role, stats)
 }
@@ -146,7 +160,9 @@ export async function deleteWorkspace(ctx: WorkspaceContext): Promise<void> {
 
   const attachments = await Attachment.find({ workspaceId }).select('storageKey').lean()
   const driver = getStorageDriver()
-  await Promise.all(attachments.map((file) => driver.delete(file.storageKey).catch(() => undefined)))
+  await Promise.all(
+    attachments.map((file) => driver.delete(file.storageKey).catch(() => undefined)),
+  )
 
   await Promise.all([
     Attachment.deleteMany({ workspaceId }),
@@ -160,6 +176,7 @@ export async function deleteWorkspace(ctx: WorkspaceContext): Promise<void> {
   ])
   await Workspace.deleteOne({ _id: workspaceId })
   await invalidateWorkspaceCaches(workspaceId)
+  await invalidateWorkspaceAccess(workspaceId)
 }
 
 export async function leaveWorkspace(ctx: WorkspaceContext): Promise<void> {
@@ -181,6 +198,7 @@ export async function leaveWorkspace(ctx: WorkspaceContext): Promise<void> {
     entityId: userId,
   })
   await invalidateWorkspaceCaches(ctx.workspace._id)
+  await invalidateWorkspaceAccess(ctx.workspace._id)
 }
 
 export async function listMembers(ctx: WorkspaceContext): Promise<MemberDTO[]> {
@@ -196,10 +214,7 @@ export async function listMembers(ctx: WorkspaceContext): Promise<MemberDTO[]> {
       return user ? toMemberDTO(membership, user) : null
     })
     .filter((member): member is MemberDTO => member !== null)
-    .sort(
-      (a, b) =>
-        ROLE_RANK[b.role] - ROLE_RANK[a.role] || a.name.localeCompare(b.name),
-    )
+    .sort((a, b) => ROLE_RANK[b.role] - ROLE_RANK[a.role] || a.name.localeCompare(b.name))
 }
 
 export async function updateMemberRole(
@@ -234,6 +249,8 @@ export async function updateMemberRole(
       body: 'Ownership was transferred to you.',
       link: `/${ctx.workspace.slug}/settings`,
     })
+    // Ownership + two roles changed — both access caches must go.
+    await invalidateWorkspaceAccess(ctx.workspace._id)
     return reloadMember(ctx.workspace._id, target.userId)
   }
 
@@ -252,6 +269,7 @@ export async function updateMemberRole(
     metadata: { from: target.role, to: role },
   })
   await invalidateWorkspaceCaches(ctx.workspace._id)
+  await invalidateWorkspaceAccess(ctx.workspace._id)
   return reloadMember(ctx.workspace._id, target.userId)
 }
 
@@ -292,6 +310,7 @@ export async function removeMember(ctx: WorkspaceContext, targetUserId: string):
     body: 'An admin removed your access to this workspace.',
   })
   await invalidateWorkspaceCaches(ctx.workspace._id)
+  await invalidateWorkspaceAccess(ctx.workspace._id)
 }
 
 // ---------------------------------------------------------------------------
@@ -322,12 +341,19 @@ export async function createInvitation(
       .select('_id')
       .lean()
     if (alreadyMember) {
-      throw AppError.conflict('That person is already a member of this workspace', ERROR_CODES.ALREADY_MEMBER)
+      throw AppError.conflict(
+        'That person is already a member of this workspace',
+        ERROR_CODES.ALREADY_MEMBER,
+      )
     }
   }
 
   /** Re-inviting supersedes an earlier pending invitation. */
-  await Invitation.deleteMany({ workspaceId: ctx.workspace._id, email: input.email, status: 'pending' })
+  await Invitation.deleteMany({
+    workspaceId: ctx.workspace._id,
+    email: input.email,
+    status: 'pending',
+  })
 
   const rawToken = randomBytes(32).toString('base64url')
   const invitation = await Invitation.create({
@@ -402,7 +428,10 @@ export interface InvitationPreview {
 }
 
 export async function previewInvitation(token: string): Promise<InvitationPreview> {
-  const invitation = await Invitation.findOne({ tokenHash: sha256Hex(token), status: 'pending' }).lean()
+  const invitation = await Invitation.findOne({
+    tokenHash: sha256Hex(token),
+    status: 'pending',
+  }).lean()
   if (!invitation) {
     throw AppError.notFound('Invitation not found or already used', ERROR_CODES.INVITATION_INVALID)
   }
@@ -413,7 +442,8 @@ export async function previewInvitation(token: string): Promise<InvitationPrevie
     Workspace.findById(invitation.workspaceId).select('name slug').lean<WorkspaceDoc>(),
     User.findById(invitation.invitedById).select('name').lean(),
   ])
-  if (!workspace) throw AppError.notFound('Workspace no longer exists', ERROR_CODES.INVITATION_INVALID)
+  if (!workspace)
+    throw AppError.notFound('Workspace no longer exists', ERROR_CODES.INVITATION_INVALID)
 
   return {
     workspaceName: workspace.name,
@@ -445,11 +475,15 @@ export async function acceptInvitation(token: string, userId: string): Promise<W
   }
 
   const workspace = await Workspace.findById(invitation.workspaceId).lean<WorkspaceDoc>()
-  if (!workspace) throw AppError.notFound('Workspace no longer exists', ERROR_CODES.INVITATION_INVALID)
+  if (!workspace)
+    throw AppError.notFound('Workspace no longer exists', ERROR_CODES.INVITATION_INVALID)
 
   const existing = await Membership.findOne({ workspaceId: workspace._id, userId })
   if (existing) {
-    throw AppError.conflict('You are already a member of this workspace', ERROR_CODES.ALREADY_MEMBER)
+    throw AppError.conflict(
+      'You are already a member of this workspace',
+      ERROR_CODES.ALREADY_MEMBER,
+    )
   }
 
   await Membership.create({
@@ -478,6 +512,7 @@ export async function acceptInvitation(token: string, userId: string): Promise<W
     entityId: userId,
   })
   await invalidateWorkspaceCaches(workspace._id)
+  await invalidateWorkspaceAccess(workspace._id)
 
   const stats = await workspaceStats(workspace._id)
   return toWorkspaceDTO(workspace, invitation.role, stats)

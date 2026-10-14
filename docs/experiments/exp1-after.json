@@ -1,0 +1,267 @@
+{
+  "experiment": 1,
+  "label": "after",
+  "generatedAt": "2026-10-14T16:49:11.726Z",
+  "environment": {
+    "machine": "Intel(R) Core(TM) i9-10885H CPU @ 2.40GHz (16 logical cores)",
+    "totalMemoryGb": 31.8,
+    "node": "v22.17.1",
+    "platform": "win32 x64",
+    "apiInstances": 1,
+    "mongodb": "local 8.x single node (127.0.0.1:27017), database flowforge_exp1",
+    "redis": "docker redis:7-alpine (127.0.0.1:6379)",
+    "health": {
+      "status": "ok",
+      "uptimeSeconds": 136,
+      "db": "connected",
+      "cache": "redis",
+      "queues": "redis",
+      "version": "0.1.0"
+    },
+    "methodology": "autocannon (10s per scenario, pipelining 1) against one API child process and a local single-node MongoDB on the same machine; the load generator shares the CPU. Rate limiting disabled for the run (dev-only flag, refused in production). CPU is the API process itself, from /metrics process_cpu_seconds_total. Seeded demo dataset at scale=4 (~200 tasks across 4 projects)."
+  },
+  "cacheCounters": {
+    "hits": 116766,
+    "misses": 79,
+    "coalesced": null
+  },
+  "payload": {
+    "boardTasks": 48,
+    "boardPayloadBytes": 33655,
+    "tasksWithoutDescription": 48,
+    "descriptionBytesInDb": 4372,
+    "estimatedBaselinePayloadBytes": 38027,
+    "reductionPercent": 11.5,
+    "note": "Uncompressed JSON of the board response; the estimate adds back the description bytes stored for the same project."
+  },
+  "results": [
+    {
+      "name": "board task list — 10 concurrent",
+      "method": "GET",
+      "url": "http://127.0.0.1:43101/api/v1/projects/6acfb1ff29e1ffaa48a369c4/tasks?sort=position",
+      "connections": 10,
+      "durationSeconds": 10,
+      "requestsPerSecond": 130,
+      "latencyMs": {
+        "average": 76.3,
+        "p50": 66,
+        "p97_5": 179,
+        "p99": 206
+      },
+      "totalRequests": 1300,
+      "non2xx": 0,
+      "errors": 0,
+      "timeouts": 0,
+      "cpuPercentOfOneCore": 116.5
+    },
+    {
+      "name": "board task list — 50 concurrent",
+      "method": "GET",
+      "url": "http://127.0.0.1:43101/api/v1/projects/6acfb1ff29e1ffaa48a369c4/tasks?sort=position",
+      "connections": 50,
+      "durationSeconds": 10,
+      "requestsPerSecond": 175,
+      "latencyMs": {
+        "average": 278.3,
+        "p50": 260,
+        "p97_5": 489,
+        "p99": 700
+      },
+      "totalRequests": 1754,
+      "non2xx": 0,
+      "errors": 0,
+      "timeouts": 0,
+      "cpuPercentOfOneCore": 132.9
+    },
+    {
+      "name": "board task list — 100 concurrent",
+      "method": "GET",
+      "url": "http://127.0.0.1:43101/api/v1/projects/6acfb1ff29e1ffaa48a369c4/tasks?sort=position",
+      "connections": 100,
+      "durationSeconds": 10,
+      "requestsPerSecond": 190,
+      "latencyMs": {
+        "average": 518.9,
+        "p50": 510,
+        "p97_5": 667,
+        "p99": 713
+      },
+      "totalRequests": 1895,
+      "non2xx": 0,
+      "errors": 0,
+      "timeouts": 0,
+      "cpuPercentOfOneCore": 123.9
+    },
+    {
+      "name": "project list — 10 concurrent",
+      "method": "GET",
+      "url": "http://127.0.0.1:43101/api/v1/workspaces/6acfb1ff29e1ffaa48a369ae/projects",
+      "connections": 10,
+      "durationSeconds": 10,
+      "requestsPerSecond": 241,
+      "latencyMs": {
+        "average": 41,
+        "p50": 39,
+        "p97_5": 63,
+        "p99": 69
+      },
+      "totalRequests": 2407,
+      "non2xx": 0,
+      "errors": 0,
+      "timeouts": 0,
+      "cpuPercentOfOneCore": 107.3
+    },
+    {
+      "name": "project list — 50 concurrent",
+      "method": "GET",
+      "url": "http://127.0.0.1:43101/api/v1/workspaces/6acfb1ff29e1ffaa48a369ae/projects",
+      "connections": 50,
+      "durationSeconds": 10,
+      "requestsPerSecond": 296,
+      "latencyMs": {
+        "average": 166.8,
+        "p50": 159,
+        "p97_5": 245,
+        "p99": 320
+      },
+      "totalRequests": 2963,
+      "non2xx": 0,
+      "errors": 0,
+      "timeouts": 0,
+      "cpuPercentOfOneCore": 103.9
+    },
+    {
+      "name": "project list — 100 concurrent",
+      "method": "GET",
+      "url": "http://127.0.0.1:43101/api/v1/workspaces/6acfb1ff29e1ffaa48a369ae/projects",
+      "connections": 100,
+      "durationSeconds": 10,
+      "requestsPerSecond": 315,
+      "latencyMs": {
+        "average": 312.3,
+        "p50": 307,
+        "p97_5": 394,
+        "p99": 460
+      },
+      "totalRequests": 3154,
+      "non2xx": 0,
+      "errors": 0,
+      "timeouts": 0,
+      "cpuPercentOfOneCore": 106.1
+    },
+    {
+      "name": "dashboard — 10 concurrent",
+      "method": "GET",
+      "url": "http://127.0.0.1:43101/api/v1/workspaces/6acfb1ff29e1ffaa48a369ae/analytics/dashboard",
+      "connections": 10,
+      "durationSeconds": 10,
+      "requestsPerSecond": 354,
+      "latencyMs": {
+        "average": 27.8,
+        "p50": 25,
+        "p97_5": 58,
+        "p99": 77
+      },
+      "totalRequests": 3536,
+      "non2xx": 0,
+      "errors": 0,
+      "timeouts": 0,
+      "cpuPercentOfOneCore": 100.4
+    },
+    {
+      "name": "dashboard — 50 concurrent",
+      "method": "GET",
+      "url": "http://127.0.0.1:43101/api/v1/workspaces/6acfb1ff29e1ffaa48a369ae/analytics/dashboard",
+      "connections": 50,
+      "durationSeconds": 10,
+      "requestsPerSecond": 355,
+      "latencyMs": {
+        "average": 139.1,
+        "p50": 130,
+        "p97_5": 214,
+        "p99": 254
+      },
+      "totalRequests": 3550,
+      "non2xx": 0,
+      "errors": 0,
+      "timeouts": 0,
+      "cpuPercentOfOneCore": 102.8
+    },
+    {
+      "name": "dashboard — 100 concurrent",
+      "method": "GET",
+      "url": "http://127.0.0.1:43101/api/v1/workspaces/6acfb1ff29e1ffaa48a369ae/analytics/dashboard",
+      "connections": 100,
+      "durationSeconds": 10,
+      "requestsPerSecond": 335,
+      "latencyMs": {
+        "average": 296.4,
+        "p50": 280,
+        "p97_5": 434,
+        "p99": 575
+      },
+      "totalRequests": 3352,
+      "non2xx": 0,
+      "errors": 0,
+      "timeouts": 0,
+      "cpuPercentOfOneCore": 103.4
+    },
+    {
+      "name": "analytics (cached 60s) — 50 concurrent",
+      "method": "GET",
+      "url": "http://127.0.0.1:43101/api/v1/workspaces/6acfb1ff29e1ffaa48a369ae/analytics?range=30",
+      "connections": 50,
+      "durationSeconds": 10,
+      "requestsPerSecond": 413,
+      "latencyMs": {
+        "average": 120,
+        "p50": 116,
+        "p97_5": 173,
+        "p99": 186
+      },
+      "totalRequests": 4130,
+      "non2xx": 0,
+      "errors": 0,
+      "timeouts": 0,
+      "cpuPercentOfOneCore": 105.1
+    },
+    {
+      "name": "task detail (counts) — 50 concurrent",
+      "method": "GET",
+      "url": "http://127.0.0.1:43101/api/v1/tasks/6acfb1ff29e1ffaa48a36a2e",
+      "connections": 50,
+      "durationSeconds": 10,
+      "requestsPerSecond": 210,
+      "latencyMs": {
+        "average": 235.8,
+        "p50": 226,
+        "p97_5": 333,
+        "p99": 355
+      },
+      "totalRequests": 2100,
+      "non2xx": 0,
+      "errors": 0,
+      "timeouts": 0,
+      "cpuPercentOfOneCore": 107.2
+    },
+    {
+      "name": "task creation (write path) — 20 concurrent",
+      "method": "POST",
+      "url": "http://127.0.0.1:43101/api/v1/projects/6acfb1ff29e1ffaa48a369c4/tasks",
+      "connections": 20,
+      "durationSeconds": 10,
+      "requestsPerSecond": 112,
+      "latencyMs": {
+        "average": 175.1,
+        "p50": 161,
+        "p97_5": 308,
+        "p99": 330
+      },
+      "totalRequests": 1120,
+      "non2xx": 0,
+      "errors": 0,
+      "timeouts": 0,
+      "cpuPercentOfOneCore": 109.9
+    }
+  ]
+}

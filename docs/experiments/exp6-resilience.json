@@ -1,0 +1,1195 @@
+{
+  "experiment": 6,
+  "generatedAt": "2026-10-14T17:35:33.861Z",
+  "environment": {
+    "machine": "Intel(R) Core(TM) i9-10885H CPU @ 2.40GHz (16 logical cores)",
+    "node": "v22.17.1",
+    "topology": "two API instances behind the round-robin load balancer with 500ms health checks and one retry for idempotent requests; Redis shared",
+    "methodology": "Load: autocannon against the load balancer. Part A stops one instance with the same shutdown() path SIGTERM triggers; Part B terminates one with a hard kill. Part C kills a BullMQ worker (application queue settings) mid-job and restarts it. Part D kills the instance hosting a websocket client and measures reconnection + post-failover event delivery."
+  },
+  "partA_gracefulRestart": {
+    "loadSeconds": 30,
+    "connections": 30,
+    "loadTiming": {
+      "startedAt": 1791999185786,
+      "resolvedAt": 1791999216801,
+      "actualDurationMs": 31015,
+      "stopRequestedAt": 1791999193798,
+      "stopRequestedSecondsIntoLoad": 8,
+      "timelineSamples": 61
+    },
+    "requests": {
+      "errors": 0,
+      "non2xx": 0,
+      "timeouts": 0,
+      "requestsPerSecond": 193,
+      "totalRequests": 5796,
+      "latencyP97_5": 227
+    },
+    "shutdown": {
+      "drainMs": 4911,
+      "exitedCleanly": true,
+      "survivorHealthyDuringShutdown": true
+    },
+    "loadBalancer": {
+      "ejectedAfterMs": 708,
+      "events": [
+        {
+          "at": 1791999193849,
+          "event": "request-retried",
+          "upstream": "api-a"
+        },
+        {
+          "at": 1791999193850,
+          "event": "request-retried",
+          "upstream": "api-a"
+        },
+        {
+          "at": 1791999193852,
+          "event": "request-retried",
+          "upstream": "api-a"
+        },
+        {
+          "at": 1791999193856,
+          "event": "request-retried",
+          "upstream": "api-a"
+        },
+        {
+          "at": 1791999193857,
+          "event": "request-retried",
+          "upstream": "api-a"
+        },
+        {
+          "at": 1791999193859,
+          "event": "request-retried",
+          "upstream": "api-a"
+        },
+        {
+          "at": 1791999194185,
+          "event": "request-retried",
+          "upstream": "api-a"
+        },
+        {
+          "at": 1791999194358,
+          "event": "request-retried",
+          "upstream": "api-a"
+        },
+        {
+          "at": 1791999194506,
+          "event": "upstream-ejected",
+          "upstream": "api-a"
+        },
+        {
+          "at": 1791999221021,
+          "event": "upstream-rejoined",
+          "upstream": "api-a"
+        },
+        {
+          "at": 1791999228078,
+          "event": "request-retried",
+          "upstream": "api-a"
+        },
+        {
+          "at": 1791999228079,
+          "event": "request-retried",
+          "upstream": "api-a"
+        },
+        {
+          "at": 1791999228080,
+          "event": "request-retried",
+          "upstream": "api-a"
+        },
+        {
+          "at": 1791999228081,
+          "event": "request-retried",
+          "upstream": "api-a"
+        },
+        {
+          "at": 1791999228081,
+          "event": "request-retried",
+          "upstream": "api-a"
+        },
+        {
+          "at": 1791999228082,
+          "event": "request-retried",
+          "upstream": "api-a"
+        },
+        {
+          "at": 1791999228084,
+          "event": "request-retried",
+          "upstream": "api-a"
+        },
+        {
+          "at": 1791999228084,
+          "event": "request-retried",
+          "upstream": "api-a"
+        },
+        {
+          "at": 1791999228085,
+          "event": "request-retried",
+          "upstream": "api-a"
+        },
+        {
+          "at": 1791999228086,
+          "event": "request-retried",
+          "upstream": "api-a"
+        },
+        {
+          "at": 1791999228087,
+          "event": "request-retried",
+          "upstream": "api-a"
+        },
+        {
+          "at": 1791999228088,
+          "event": "request-retried",
+          "upstream": "api-a"
+        },
+        {
+          "at": 1791999228089,
+          "event": "request-retried",
+          "upstream": "api-a"
+        },
+        {
+          "at": 1791999228090,
+          "event": "request-retried",
+          "upstream": "api-a"
+        },
+        {
+          "at": 1791999228091,
+          "event": "request-retried",
+          "upstream": "api-a"
+        },
+        {
+          "at": 1791999228091,
+          "event": "request-retried",
+          "upstream": "api-a"
+        },
+        {
+          "at": 1791999228092,
+          "event": "request-retried",
+          "upstream": "api-a"
+        },
+        {
+          "at": 1791999228093,
+          "event": "request-retried",
+          "upstream": "api-a"
+        },
+        {
+          "at": 1791999228094,
+          "event": "request-retried",
+          "upstream": "api-a"
+        },
+        {
+          "at": 1791999228094,
+          "event": "request-retried",
+          "upstream": "api-a"
+        },
+        {
+          "at": 1791999228095,
+          "event": "request-retried",
+          "upstream": "api-a"
+        },
+        {
+          "at": 1791999228096,
+          "event": "request-retried",
+          "upstream": "api-a"
+        },
+        {
+          "at": 1791999228097,
+          "event": "request-retried",
+          "upstream": "api-a"
+        },
+        {
+          "at": 1791999228098,
+          "event": "request-retried",
+          "upstream": "api-a"
+        },
+        {
+          "at": 1791999228109,
+          "event": "request-retried",
+          "upstream": "api-a"
+        },
+        {
+          "at": 1791999228110,
+          "event": "request-retried",
+          "upstream": "api-a"
+        },
+        {
+          "at": 1791999228110,
+          "event": "request-retried",
+          "upstream": "api-a"
+        },
+        {
+          "at": 1791999228136,
+          "event": "request-retried",
+          "upstream": "api-a"
+        },
+        {
+          "at": 1791999228229,
+          "event": "request-retried",
+          "upstream": "api-a"
+        },
+        {
+          "at": 1791999228232,
+          "event": "request-retried",
+          "upstream": "api-a"
+        },
+        {
+          "at": 1791999228234,
+          "event": "request-retried",
+          "upstream": "api-a"
+        },
+        {
+          "at": 1791999228236,
+          "event": "request-retried",
+          "upstream": "api-a"
+        },
+        {
+          "at": 1791999228238,
+          "event": "request-retried",
+          "upstream": "api-a"
+        },
+        {
+          "at": 1791999228240,
+          "event": "request-retried",
+          "upstream": "api-a"
+        },
+        {
+          "at": 1791999228242,
+          "event": "request-retried",
+          "upstream": "api-a"
+        },
+        {
+          "at": 1791999228244,
+          "event": "request-retried",
+          "upstream": "api-a"
+        },
+        {
+          "at": 1791999228246,
+          "event": "request-retried",
+          "upstream": "api-a"
+        },
+        {
+          "at": 1791999228247,
+          "event": "request-retried",
+          "upstream": "api-a"
+        },
+        {
+          "at": 1791999228247,
+          "event": "request-retried",
+          "upstream": "api-a"
+        },
+        {
+          "at": 1791999228247,
+          "event": "request-retried",
+          "upstream": "api-a"
+        },
+        {
+          "at": 1791999228248,
+          "event": "request-retried",
+          "upstream": "api-a"
+        },
+        {
+          "at": 1791999228248,
+          "event": "request-retried",
+          "upstream": "api-a"
+        },
+        {
+          "at": 1791999228283,
+          "event": "request-retried",
+          "upstream": "api-a"
+        },
+        {
+          "at": 1791999228382,
+          "event": "request-retried",
+          "upstream": "api-a"
+        },
+        {
+          "at": 1791999228384,
+          "event": "request-retried",
+          "upstream": "api-a"
+        },
+        {
+          "at": 1791999228387,
+          "event": "request-retried",
+          "upstream": "api-a"
+        },
+        {
+          "at": 1791999228389,
+          "event": "request-retried",
+          "upstream": "api-a"
+        },
+        {
+          "at": 1791999228391,
+          "event": "request-retried",
+          "upstream": "api-a"
+        },
+        {
+          "at": 1791999228395,
+          "event": "request-retried",
+          "upstream": "api-a"
+        },
+        {
+          "at": 1791999228396,
+          "event": "request-retried",
+          "upstream": "api-a"
+        },
+        {
+          "at": 1791999228398,
+          "event": "request-retried",
+          "upstream": "api-a"
+        },
+        {
+          "at": 1791999228399,
+          "event": "request-retried",
+          "upstream": "api-a"
+        },
+        {
+          "at": 1791999228400,
+          "event": "request-retried",
+          "upstream": "api-a"
+        },
+        {
+          "at": 1791999228401,
+          "event": "request-retried",
+          "upstream": "api-a"
+        },
+        {
+          "at": 1791999228401,
+          "event": "request-retried",
+          "upstream": "api-a"
+        },
+        {
+          "at": 1791999228402,
+          "event": "request-retried",
+          "upstream": "api-a"
+        },
+        {
+          "at": 1791999228402,
+          "event": "request-retried",
+          "upstream": "api-a"
+        },
+        {
+          "at": 1791999228440,
+          "event": "request-retried",
+          "upstream": "api-a"
+        },
+        {
+          "at": 1791999228522,
+          "event": "request-retried",
+          "upstream": "api-a"
+        },
+        {
+          "at": 1791999228526,
+          "event": "request-retried",
+          "upstream": "api-a"
+        },
+        {
+          "at": 1791999228530,
+          "event": "request-retried",
+          "upstream": "api-a"
+        },
+        {
+          "at": 1791999228534,
+          "event": "request-retried",
+          "upstream": "api-a"
+        },
+        {
+          "at": 1791999228536,
+          "event": "request-retried",
+          "upstream": "api-a"
+        },
+        {
+          "at": 1791999228537,
+          "event": "request-retried",
+          "upstream": "api-a"
+        },
+        {
+          "at": 1791999228538,
+          "event": "request-retried",
+          "upstream": "api-a"
+        },
+        {
+          "at": 1791999228539,
+          "event": "request-retried",
+          "upstream": "api-a"
+        },
+        {
+          "at": 1791999228540,
+          "event": "request-retried",
+          "upstream": "api-a"
+        },
+        {
+          "at": 1791999228540,
+          "event": "request-retried",
+          "upstream": "api-a"
+        },
+        {
+          "at": 1791999228541,
+          "event": "request-retried",
+          "upstream": "api-a"
+        },
+        {
+          "at": 1791999228542,
+          "event": "request-retried",
+          "upstream": "api-a"
+        },
+        {
+          "at": 1791999228544,
+          "event": "request-retried",
+          "upstream": "api-a"
+        },
+        {
+          "at": 1791999228545,
+          "event": "request-retried",
+          "upstream": "api-a"
+        },
+        {
+          "at": 1791999228593,
+          "event": "request-retried",
+          "upstream": "api-a"
+        },
+        {
+          "at": 1791999228665,
+          "event": "request-retried",
+          "upstream": "api-a"
+        },
+        {
+          "at": 1791999228667,
+          "event": "request-retried",
+          "upstream": "api-a"
+        },
+        {
+          "at": 1791999228669,
+          "event": "request-retried",
+          "upstream": "api-a"
+        },
+        {
+          "at": 1791999228671,
+          "event": "request-retried",
+          "upstream": "api-a"
+        },
+        {
+          "at": 1791999228673,
+          "event": "request-retried",
+          "upstream": "api-a"
+        },
+        {
+          "at": 1791999228675,
+          "event": "request-retried",
+          "upstream": "api-a"
+        },
+        {
+          "at": 1791999228677,
+          "event": "request-retried",
+          "upstream": "api-a"
+        },
+        {
+          "at": 1791999228678,
+          "event": "request-retried",
+          "upstream": "api-a"
+        },
+        {
+          "at": 1791999228679,
+          "event": "request-retried",
+          "upstream": "api-a"
+        },
+        {
+          "at": 1791999228680,
+          "event": "request-retried",
+          "upstream": "api-a"
+        },
+        {
+          "at": 1791999228681,
+          "event": "request-retried",
+          "upstream": "api-a"
+        },
+        {
+          "at": 1791999228681,
+          "event": "request-retried",
+          "upstream": "api-a"
+        },
+        {
+          "at": 1791999228681,
+          "event": "request-retried",
+          "upstream": "api-a"
+        },
+        {
+          "at": 1791999228717,
+          "event": "request-retried",
+          "upstream": "api-a"
+        },
+        {
+          "at": 1791999228718,
+          "event": "request-retried",
+          "upstream": "api-a"
+        },
+        {
+          "at": 1791999228806,
+          "event": "request-retried",
+          "upstream": "api-a"
+        },
+        {
+          "at": 1791999228809,
+          "event": "request-retried",
+          "upstream": "api-a"
+        },
+        {
+          "at": 1791999228812,
+          "event": "request-retried",
+          "upstream": "api-a"
+        },
+        {
+          "at": 1791999228814,
+          "event": "request-retried",
+          "upstream": "api-a"
+        },
+        {
+          "at": 1791999228817,
+          "event": "request-retried",
+          "upstream": "api-a"
+        },
+        {
+          "at": 1791999228820,
+          "event": "request-retried",
+          "upstream": "api-a"
+        },
+        {
+          "at": 1791999228821,
+          "event": "request-retried",
+          "upstream": "api-a"
+        },
+        {
+          "at": 1791999228824,
+          "event": "request-retried",
+          "upstream": "api-a"
+        },
+        {
+          "at": 1791999228824,
+          "event": "request-retried",
+          "upstream": "api-a"
+        },
+        {
+          "at": 1791999228824,
+          "event": "request-retried",
+          "upstream": "api-a"
+        },
+        {
+          "at": 1791999228825,
+          "event": "request-retried",
+          "upstream": "api-a"
+        },
+        {
+          "at": 1791999228826,
+          "event": "request-retried",
+          "upstream": "api-a"
+        },
+        {
+          "at": 1791999228827,
+          "event": "request-retried",
+          "upstream": "api-a"
+        },
+        {
+          "at": 1791999228862,
+          "event": "request-retried",
+          "upstream": "api-a"
+        },
+        {
+          "at": 1791999228863,
+          "event": "request-retried",
+          "upstream": "api-a"
+        },
+        {
+          "at": 1791999228967,
+          "event": "request-retried",
+          "upstream": "api-a"
+        },
+        {
+          "at": 1791999228973,
+          "event": "request-retried",
+          "upstream": "api-a"
+        },
+        {
+          "at": 1791999228976,
+          "event": "request-retried",
+          "upstream": "api-a"
+        },
+        {
+          "at": 1791999228981,
+          "event": "request-retried",
+          "upstream": "api-a"
+        },
+        {
+          "at": 1791999228983,
+          "event": "request-retried",
+          "upstream": "api-a"
+        },
+        {
+          "at": 1791999228988,
+          "event": "request-retried",
+          "upstream": "api-a"
+        },
+        {
+          "at": 1791999228991,
+          "event": "request-retried",
+          "upstream": "api-a"
+        },
+        {
+          "at": 1791999228993,
+          "event": "request-retried",
+          "upstream": "api-a"
+        },
+        {
+          "at": 1791999228996,
+          "event": "request-retried",
+          "upstream": "api-a"
+        },
+        {
+          "at": 1791999228997,
+          "event": "request-retried",
+          "upstream": "api-a"
+        },
+        {
+          "at": 1791999228998,
+          "event": "request-retried",
+          "upstream": "api-a"
+        },
+        {
+          "at": 1791999228999,
+          "event": "request-retried",
+          "upstream": "api-a"
+        },
+        {
+          "at": 1791999229000,
+          "event": "request-retried",
+          "upstream": "api-a"
+        },
+        {
+          "at": 1791999229027,
+          "event": "upstream-ejected",
+          "upstream": "api-a"
+        },
+        {
+          "at": 1791999239031,
+          "event": "upstream-ejected",
+          "upstream": "api-b"
+        },
+        {
+          "at": 1791999326087,
+          "event": "upstream-rejoined",
+          "upstream": "api-a"
+        },
+        {
+          "at": 1791999330091,
+          "event": "upstream-rejoined",
+          "upstream": "api-b"
+        },
+        {
+          "at": 1791999332090,
+          "event": "upstream-ejected",
+          "upstream": "api-a"
+        }
+      ],
+      "totalRetries": 8,
+      "timeline": [
+        {
+          "t": 1791999186298,
+          "healthyA": true,
+          "healthyB": true,
+          "errors": 0,
+          "retries": 0
+        },
+        {
+          "t": 1791999186799,
+          "healthyA": true,
+          "healthyB": true,
+          "errors": 0,
+          "retries": 0
+        },
+        {
+          "t": 1791999187298,
+          "healthyA": true,
+          "healthyB": true,
+          "errors": 0,
+          "retries": 0
+        },
+        {
+          "t": 1791999187798,
+          "healthyA": true,
+          "healthyB": true,
+          "errors": 0,
+          "retries": 0
+        },
+        {
+          "t": 1791999188299,
+          "healthyA": true,
+          "healthyB": true,
+          "errors": 0,
+          "retries": 0
+        },
+        {
+          "t": 1791999188799,
+          "healthyA": true,
+          "healthyB": true,
+          "errors": 0,
+          "retries": 0
+        },
+        {
+          "t": 1791999189299,
+          "healthyA": true,
+          "healthyB": true,
+          "errors": 0,
+          "retries": 0
+        },
+        {
+          "t": 1791999189799,
+          "healthyA": true,
+          "healthyB": true,
+          "errors": 0,
+          "retries": 0
+        },
+        {
+          "t": 1791999190300,
+          "healthyA": true,
+          "healthyB": true,
+          "errors": 0,
+          "retries": 0
+        },
+        {
+          "t": 1791999190801,
+          "healthyA": true,
+          "healthyB": true,
+          "errors": 0,
+          "retries": 0
+        },
+        {
+          "t": 1791999191301,
+          "healthyA": true,
+          "healthyB": true,
+          "errors": 0,
+          "retries": 0
+        },
+        {
+          "t": 1791999191801,
+          "healthyA": true,
+          "healthyB": true,
+          "errors": 0,
+          "retries": 0
+        },
+        {
+          "t": 1791999192301,
+          "healthyA": true,
+          "healthyB": true,
+          "errors": 0,
+          "retries": 0
+        },
+        {
+          "t": 1791999192801,
+          "healthyA": true,
+          "healthyB": true,
+          "errors": 0,
+          "retries": 0
+        },
+        {
+          "t": 1791999193301,
+          "healthyA": true,
+          "healthyB": true,
+          "errors": 0,
+          "retries": 0
+        },
+        {
+          "t": 1791999193801,
+          "healthyA": true,
+          "healthyB": true,
+          "errors": 0,
+          "retries": 0
+        },
+        {
+          "t": 1791999194302,
+          "healthyA": true,
+          "healthyB": true,
+          "errors": 7,
+          "retries": 7
+        },
+        {
+          "t": 1791999194802,
+          "healthyA": false,
+          "healthyB": true,
+          "errors": 8,
+          "retries": 8
+        },
+        {
+          "t": 1791999195301,
+          "healthyA": false,
+          "healthyB": true,
+          "errors": 8,
+          "retries": 8
+        },
+        {
+          "t": 1791999195801,
+          "healthyA": false,
+          "healthyB": true,
+          "errors": 8,
+          "retries": 8
+        },
+        {
+          "t": 1791999196302,
+          "healthyA": false,
+          "healthyB": true,
+          "errors": 8,
+          "retries": 8
+        },
+        {
+          "t": 1791999196803,
+          "healthyA": false,
+          "healthyB": true,
+          "errors": 8,
+          "retries": 8
+        },
+        {
+          "t": 1791999197303,
+          "healthyA": false,
+          "healthyB": true,
+          "errors": 8,
+          "retries": 8
+        },
+        {
+          "t": 1791999197803,
+          "healthyA": false,
+          "healthyB": true,
+          "errors": 8,
+          "retries": 8
+        },
+        {
+          "t": 1791999198304,
+          "healthyA": false,
+          "healthyB": true,
+          "errors": 8,
+          "retries": 8
+        },
+        {
+          "t": 1791999198803,
+          "healthyA": false,
+          "healthyB": true,
+          "errors": 8,
+          "retries": 8
+        },
+        {
+          "t": 1791999199303,
+          "healthyA": false,
+          "healthyB": true,
+          "errors": 8,
+          "retries": 8
+        },
+        {
+          "t": 1791999199803,
+          "healthyA": false,
+          "healthyB": true,
+          "errors": 8,
+          "retries": 8
+        },
+        {
+          "t": 1791999200303,
+          "healthyA": false,
+          "healthyB": true,
+          "errors": 8,
+          "retries": 8
+        },
+        {
+          "t": 1791999200804,
+          "healthyA": false,
+          "healthyB": true,
+          "errors": 8,
+          "retries": 8
+        },
+        {
+          "t": 1791999201304,
+          "healthyA": false,
+          "healthyB": true,
+          "errors": 8,
+          "retries": 8
+        },
+        {
+          "t": 1791999201804,
+          "healthyA": false,
+          "healthyB": true,
+          "errors": 8,
+          "retries": 8
+        },
+        {
+          "t": 1791999202304,
+          "healthyA": false,
+          "healthyB": true,
+          "errors": 8,
+          "retries": 8
+        },
+        {
+          "t": 1791999202804,
+          "healthyA": false,
+          "healthyB": true,
+          "errors": 8,
+          "retries": 8
+        },
+        {
+          "t": 1791999203305,
+          "healthyA": false,
+          "healthyB": true,
+          "errors": 8,
+          "retries": 8
+        },
+        {
+          "t": 1791999203805,
+          "healthyA": false,
+          "healthyB": true,
+          "errors": 8,
+          "retries": 8
+        },
+        {
+          "t": 1791999204305,
+          "healthyA": false,
+          "healthyB": true,
+          "errors": 8,
+          "retries": 8
+        },
+        {
+          "t": 1791999204805,
+          "healthyA": false,
+          "healthyB": true,
+          "errors": 8,
+          "retries": 8
+        },
+        {
+          "t": 1791999205306,
+          "healthyA": false,
+          "healthyB": true,
+          "errors": 8,
+          "retries": 8
+        },
+        {
+          "t": 1791999205807,
+          "healthyA": false,
+          "healthyB": true,
+          "errors": 8,
+          "retries": 8
+        },
+        {
+          "t": 1791999206307,
+          "healthyA": false,
+          "healthyB": true,
+          "errors": 8,
+          "retries": 8
+        },
+        {
+          "t": 1791999206808,
+          "healthyA": false,
+          "healthyB": true,
+          "errors": 8,
+          "retries": 8
+        },
+        {
+          "t": 1791999207308,
+          "healthyA": false,
+          "healthyB": true,
+          "errors": 8,
+          "retries": 8
+        },
+        {
+          "t": 1791999207808,
+          "healthyA": false,
+          "healthyB": true,
+          "errors": 8,
+          "retries": 8
+        },
+        {
+          "t": 1791999208308,
+          "healthyA": false,
+          "healthyB": true,
+          "errors": 8,
+          "retries": 8
+        },
+        {
+          "t": 1791999208809,
+          "healthyA": false,
+          "healthyB": true,
+          "errors": 8,
+          "retries": 8
+        },
+        {
+          "t": 1791999209310,
+          "healthyA": false,
+          "healthyB": true,
+          "errors": 8,
+          "retries": 8
+        },
+        {
+          "t": 1791999209810,
+          "healthyA": false,
+          "healthyB": true,
+          "errors": 8,
+          "retries": 8
+        },
+        {
+          "t": 1791999210310,
+          "healthyA": false,
+          "healthyB": true,
+          "errors": 8,
+          "retries": 8
+        },
+        {
+          "t": 1791999210811,
+          "healthyA": false,
+          "healthyB": true,
+          "errors": 8,
+          "retries": 8
+        },
+        {
+          "t": 1791999211310,
+          "healthyA": false,
+          "healthyB": true,
+          "errors": 8,
+          "retries": 8
+        },
+        {
+          "t": 1791999211810,
+          "healthyA": false,
+          "healthyB": true,
+          "errors": 8,
+          "retries": 8
+        },
+        {
+          "t": 1791999212311,
+          "healthyA": false,
+          "healthyB": true,
+          "errors": 8,
+          "retries": 8
+        },
+        {
+          "t": 1791999212810,
+          "healthyA": false,
+          "healthyB": true,
+          "errors": 8,
+          "retries": 8
+        },
+        {
+          "t": 1791999213311,
+          "healthyA": false,
+          "healthyB": true,
+          "errors": 8,
+          "retries": 8
+        },
+        {
+          "t": 1791999213812,
+          "healthyA": false,
+          "healthyB": true,
+          "errors": 8,
+          "retries": 8
+        },
+        {
+          "t": 1791999214313,
+          "healthyA": false,
+          "healthyB": true,
+          "errors": 8,
+          "retries": 8
+        },
+        {
+          "t": 1791999214813,
+          "healthyA": false,
+          "healthyB": true,
+          "errors": 8,
+          "retries": 8
+        },
+        {
+          "t": 1791999215313,
+          "healthyA": false,
+          "healthyB": true,
+          "errors": 8,
+          "retries": 8
+        },
+        {
+          "t": 1791999215813,
+          "healthyA": false,
+          "healthyB": true,
+          "errors": 8,
+          "retries": 8
+        },
+        {
+          "t": 1791999216313,
+          "healthyA": false,
+          "healthyB": true,
+          "errors": 8,
+          "retries": 8
+        }
+      ]
+    },
+    "verdict": "zero failed requests"
+  },
+  "partB_hardCrash": {
+    "loadSeconds": 15,
+    "connections": 30,
+    "loadTiming": {
+      "actualDurationMs": 16019,
+      "killedSecondsIntoLoad": 6
+    },
+    "requests": {
+      "errors": 0,
+      "non2xx": 0,
+      "timeouts": 0,
+      "requestsPerSecond": 213,
+      "totalRequests": 3191,
+      "latencyP97_5": 255
+    },
+    "loadBalancer": {
+      "retriesDuringRun": 116,
+      "upstreamErrorsDuringRun": 116,
+      "ejectedAfterMs": 964
+    },
+    "killMs": 38,
+    "killedAt": 1791999228063,
+    "verdict": "no failed requests (retry covered it)",
+    "note": "A hard crash terminates in-flight connections; the load balancer retries idempotent GETs once, so surviving requests fail only when they were mid-flight on the killed instance."
+  },
+  "partC_workerKill": {
+    "queue": "flowforge-jobs",
+    "jobOptions": {
+      "attempts": 3,
+      "backoff": {
+        "type": "exponential",
+        "delay": 1000
+      },
+      "removeOnComplete": 1000,
+      "removeOnFail": 5000
+    },
+    "jobs": 20,
+    "jobDurationMs": 2000,
+    "killedWorker": {
+      "startedBeforeKill": 15,
+      "doneBeforeKill": 10,
+      "countsAfterKill": {
+        "active": 5,
+        "waiting": 5,
+        "completed": 10,
+        "failed": 0,
+        "paused": 0
+      }
+    },
+    "recovery": {
+      "recoveryMs": 5015,
+      "completedAfterRecovery": 20,
+      "failedAfterRecovery": 0,
+      "jobsProcessedBySecondWorker": 10,
+      "totalWallMs": 6048
+    },
+    "verdict": "no jobs lost",
+    "note": "The harness worker uses the application queue name, job options (3 attempts, exponential backoff) and worker concurrency from src/jobs/queue.ts; the application worker itself runs in-process with the API."
+  },
+  "partD_socketReconnect": {
+    "hostInstance": "api-a3",
+    "gracefulStopMs": 786,
+    "disconnects": 2,
+    "reconnects": 1,
+    "reconnectMs": 1408,
+    "receivedEventAfterFailover": true,
+    "eventLatencyAfterFailoverMs": 167,
+    "verdict": "client reconnected and resumed events"
+  }
+}

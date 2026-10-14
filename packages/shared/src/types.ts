@@ -87,7 +87,8 @@ export interface TaskDTO {
   projectName: string
   key: string
   title: string
-  description: string
+  /** Omitted from list/board payloads — always present on the task detail endpoint. */
+  description?: string
   status: TaskStatus
   priority: TaskPriority
   assignees: UserMiniDTO[]
