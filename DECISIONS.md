@@ -71,12 +71,14 @@ MongoDB databases: `flowforge_dev` (dev/seed), `flowforge_test` (integration tes
 ## Verification status
 
 - ✅ 66 API integration tests, 16 web unit tests, strict typecheck on all workspaces, both production builds.
-- ✅ Query benchmark measured and committed (`docs/benchmark-results.json`).
+- ✅ Playwright suite: **6/6 passing locally** against a seeded disposable database (`npm run e2e`).
+- ✅ Query benchmark measured and committed (`docs/benchmark-results.json`); the explain extraction was
+  hardened after the first run produced incoherent counters, and the dataset generator fixed to stop
+  correlating status with project id — the committed artifact now reports the real index name and
+  `docsExamined = nReturned`.
 - ✅ HTTP load smoke measured and committed (`docs/load-smoke-results.json`) — see `docs/BENCHMARKS.md`
   for the honest interpretation (single process + single machine saturation point).
 - ✅ `docker compose config -q` passes; images were **not** built locally (daemon off). CI builds them.
-- ⏳ Playwright suite is runnable via `npm run e2e`; browser download is large, so treat the CI job as
-  the canonical run.
 
 ## Open questions / future work
 

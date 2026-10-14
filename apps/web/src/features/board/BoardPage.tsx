@@ -284,7 +284,7 @@ export function BoardPage(): ReactElement {
               status={status}
               tasks={columns[status]}
               canWrite={writable}
-              onOpenTask={(task) => setDialog({ open: true, task })}
+              onOpenTask={(task) => navigate(`/app/${workspace.slug}/tasks/${task.id}`)}
               onAddTask={(columnStatus) =>
                 setDialog({ open: true, task: null, defaultStatus: columnStatus })
               }

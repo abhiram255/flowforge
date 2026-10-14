@@ -116,9 +116,9 @@ Run everything locally with `npm run typecheck && npm test && npm run build`.
 | API integration tests | ✅ 66 passing | real MongoDB; tenancy, RBAC, OCC, pagination, invitations, sockets |
 | Web typecheck / build | ✅ passing | route-level code splitting (initial JS 195 kB gzip) |
 | Web unit tests | ✅ 16 passing | API client refresh single-flight, drag-drop math, task card |
-| Query benchmark | ✅ measured | `docs/benchmark-results.json` (16.9× p95 improvement with the compound index) |
+| Query benchmark | ✅ measured | `docs/benchmark-results.json` (10× p95; 20,000 → 40 docs examined with the compound index) |
 | HTTP load smoke | ✅ measured | `docs/load-smoke-results.json` — see honest interpretation below |
-| E2E (Playwright) | ⏳/✅ | runs in CI against a seeded database; `npm run e2e` |
+| E2E (Playwright) | ✅ 6 passing | `npm run e2e` walks register → workspace → board → task → comment, plus filters |
 
 **Honest performance note.** At 10 concurrent connections the board read serves p97.5 ≈ 104 ms;
 at 100 connections the single process saturates (~160 rps) and latency queues. That is a
