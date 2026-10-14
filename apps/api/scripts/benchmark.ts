@@ -38,11 +38,32 @@ function percentile(sorted: number[], fraction: number): number {
   return Math.round((sorted[index] as number) * 1000) / 1000
 }
 
+function firstIndexName(plan: Record<string, unknown> | undefined): string | null {
+  if (!plan) return null
+  if (typeof plan.indexName === 'string') return plan.indexName
+  const children = [plan.inputStage, plan.stage, plan.innerStage, plan.outerStage, plan.executionStages].filter(
+    Boolean,
+  ) as Array<Record<string, unknown>>
+  for (const child of children) {
+    if (child && typeof child === 'object' && 'stage' in child && !('inputStage' in child)) {
+      const nested = firstIndexName(child)
+      if (nested) return nested
+      continue
+    }
+    const nested = firstIndexName(child)
+    if (nested) return nested
+  }
+  return null
+}
+
 async function measure(
-  collection: mongoose.mongo.Collection,
+  db: mongoose.mongo.Db,
+  collectionName: string,
   query: Record<string, unknown>,
   label: string,
 ): Promise<Measurement> {
+  const collection = db.collection(collectionName)
+
   for (let warmup = 0; warmup < 25; warmup += 1) {
     await collection.find(query).sort({ position: 1 }).limit(100).toArray()
   }
@@ -55,25 +76,29 @@ async function measure(
   }
   samples.sort((a, b) => a - b)
 
-  const explain = (await collection
-    .find(query)
-    .sort({ position: 1 })
-    .limit(100)
-    .explain('executionStats')) as unknown as {
-    queryPlanner: { winningPlan: { inputStage?: { indexName?: string }; stage?: string } }
+  // Explicit command so the win plan and execution counters are unambiguous.
+  const explain = (await db.command({
+    explain: { find: collectionName, filter: query, sort: { position: 1 }, limit: 100 },
+    verbosity: 'executionStats',
+  })) as unknown as {
+    queryPlanner: { winningPlan: Record<string, unknown> }
     executionStats: { totalDocsExamined: number; totalKeysExamined: number; nReturned: number }
   }
 
-  const winning = explain.queryPlanner.winningPlan
+  const stats = explain.executionStats
+  if (stats.nReturned <= 0) {
+    throw new Error(`benchmark query matched nothing (nReturned=${stats.nReturned}) — fix the dataset`)
+  }
+
   return {
     label,
     p50Ms: percentile(samples, 0.5),
     p95Ms: percentile(samples, 0.95),
     p99Ms: percentile(samples, 0.99),
-    docsExamined: explain.executionStats.totalDocsExamined,
-    keysExamined: explain.executionStats.totalKeysExamined,
-    nReturned: explain.executionStats.nReturned,
-    indexUsed: winning.inputStage?.indexName ?? (winning.stage === 'COLLSCAN' ? null : 'unknown'),
+    docsExamined: stats.totalDocsExamined,
+    keysExamined: stats.totalKeysExamined,
+    nReturned: stats.nReturned,
+    indexUsed: firstIndexName(explain.queryPlanner.winningPlan),
   }
 }
 
@@ -98,10 +123,14 @@ async function main(): Promise<void> {
 
   const documents = Array.from({ length: DOC_COUNT }, (_, index) => {
     const project = projectIds[index % projectIds.length]!
+    // Status must vary within a project (not be correlated with the project id),
+    // otherwise a status-filtered query matches nothing and the benchmark lies.
+    const round = Math.floor(index / projectIds.length)
+    const status = STATUSES[(round + index) % STATUSES.length]
     return {
       workspaceId: project.workspaceId,
       projectId: project.projectId,
-      status: STATUSES[index % STATUSES.length],
+      status,
       priority: ['low', 'medium', 'high', 'urgent'][index % 4],
       assigneeIds: [new Types.ObjectId()],
       position: index,
@@ -127,10 +156,15 @@ async function main(): Promise<void> {
     status: 'todo',
   }
 
-  const withoutIndex = await measure(collection, query, 'without compound index (collection scan)')
+  const withoutIndex = await measure(db, 'task_bench', query, 'without compound index (collection scan)')
 
   await collection.createIndex({ workspaceId: 1, projectId: 1, status: 1, position: 1 })
-  const withIndex = await measure(collection, query, 'with compound index {workspaceId, projectId, status, position}')
+  const withIndex = await measure(
+    db,
+    'task_bench',
+    query,
+    'with compound index {workspaceId, projectId, status, position}',
+  )
 
   const speedup = withoutIndex.p95Ms / Math.max(withIndex.p95Ms, 0.001)
   const docsReduction = withoutIndex.docsExamined / Math.max(withIndex.docsExamined, 1)

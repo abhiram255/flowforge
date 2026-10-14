@@ -1,0 +1,94 @@
+# ---------------------------------------------------------------------------
+# FlowForge local stack: MongoDB, Redis, API and web (nginx).
+#
+#   docker compose up --build      → http://localhost:8080
+#
+# This is a development environment: it seeds the demo dataset on first boot
+# and runs plain HTTP. For a production deployment set NODE_ENV=production,
+# COOKIE_SECURE=true behind TLS, and rotate JWT_ACCESS_SECRET.
+# ---------------------------------------------------------------------------
+name: flowforge
+
+services:
+  mongo:
+    image: mongo:8
+    restart: unless-stopped
+    ports:
+      - '27017:27017'
+    volumes:
+      - mongo-data:/data/db
+    healthcheck:
+      test: ['CMD', 'mongosh', '--quiet', '--eval', "db.adminCommand('ping').ok"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 15s
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: ['redis-server', '--appendonly', 'yes']
+    ports:
+      - '6379:6379'
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 10s
+      timeout: 3s
+      retries: 10
+
+  api:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    restart: unless-stopped
+    depends_on:
+      mongo:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      NODE_ENV: development
+      PORT: '4000'
+      MONGODB_URI: mongodb://mongo:27017/flowforge
+      REDIS_URL: redis://redis:6379
+      JWT_ACCESS_SECRET: compose-dev-secret-change-me-at-least-32-chars
+      COOKIE_SECURE: 'false'
+      APP_URL: http://localhost:8080
+      CORS_ORIGINS: http://localhost:8080,http://localhost:5173
+      STORAGE_DRIVER: local
+      LOCAL_STORAGE_DIR: /app/apps/api/storage
+      LOG_LEVEL: info
+      SEED_ON_START: 'true'
+      SEED_RESET: 'false'
+    ports:
+      - '4000:4000'
+    volumes:
+      - api-storage:/app/apps/api/storage
+    healthcheck:
+      test:
+        - CMD
+        - node
+        - -e
+        - "fetch('http://127.0.0.1:4000/api/v1/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+  web:
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+    restart: unless-stopped
+    depends_on:
+      api:
+        condition: service_healthy
+    ports:
+      - '8080:80'
+
+volumes:
+  mongo-data:
+  redis-data:
+  api-storage:
