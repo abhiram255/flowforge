@@ -1,0 +1,119 @@
+{
+  "generatedAt": "2026-10-14T03:33:13.484Z",
+  "environment": {
+    "nodeVersion": "v22.17.1",
+    "platform": "win32 x64",
+    "database": "flowforge_load",
+    "methodology": "autocannon against a single API process and single-node MongoDB on the same machine, seeded with the demo dataset at scale=4 (~190 tasks). Low-connection scenarios indicate per-request service time; high-connection scenarios show where the single process saturates. Numbers describe this machine, not production capacity."
+  },
+  "results": [
+    {
+      "name": "board task list @ 10 conns (service time signal)",
+      "url": "http://localhost:<port>/api/v1/projects/6acef7ba9dc810d0aeebd43e/tasks?sort=position",
+      "method": "GET",
+      "connections": 10,
+      "durationSeconds": 10,
+      "requestsPerSecond": 156,
+      "latencyMs": {
+        "average": 63.9,
+        "p50": 60,
+        "p97_5": 104,
+        "p99": 118
+      },
+      "totalRequests": 1560,
+      "non2xx": 0,
+      "errors": 0,
+      "timeouts": 0
+    },
+    {
+      "name": "board task list @ 50 conns",
+      "url": "http://localhost:<port>/api/v1/projects/6acef7ba9dc810d0aeebd43e/tasks?sort=position",
+      "method": "GET",
+      "connections": 50,
+      "durationSeconds": 10,
+      "requestsPerSecond": 167,
+      "latencyMs": {
+        "average": 301.33,
+        "p50": 298,
+        "p97_5": 362,
+        "p99": 392
+      },
+      "totalRequests": 1674,
+      "non2xx": 0,
+      "errors": 0,
+      "timeouts": 0
+    },
+    {
+      "name": "board task list @ 100 conns (saturation view)",
+      "url": "http://localhost:<port>/api/v1/projects/6acef7ba9dc810d0aeebd43e/tasks?sort=position",
+      "method": "GET",
+      "connections": 100,
+      "durationSeconds": 10,
+      "requestsPerSecond": 159,
+      "latencyMs": {
+        "average": 637.75,
+        "p50": 646,
+        "p97_5": 867,
+        "p99": 925
+      },
+      "totalRequests": 1592,
+      "non2xx": 0,
+      "errors": 0,
+      "timeouts": 0
+    },
+    {
+      "name": "task detail @ 50 conns (with count aggregations)",
+      "url": "http://localhost:<port>/api/v1/tasks/6acef7bb9dc810d0aeebd4aa",
+      "method": "GET",
+      "connections": 50,
+      "durationSeconds": 10,
+      "requestsPerSecond": 170,
+      "latencyMs": {
+        "average": 296.8,
+        "p50": 284,
+        "p97_5": 483,
+        "p99": 507
+      },
+      "totalRequests": 1700,
+      "non2xx": 0,
+      "errors": 0,
+      "timeouts": 0
+    },
+    {
+      "name": "dashboard snapshot @ 50 conns (20s cache)",
+      "url": "http://localhost:<port>/api/v1/workspaces/6acef7ba9dc810d0aeebd428/analytics/dashboard",
+      "method": "GET",
+      "connections": 50,
+      "durationSeconds": 10,
+      "requestsPerSecond": 260,
+      "latencyMs": {
+        "average": 193.16,
+        "p50": 179,
+        "p97_5": 247,
+        "p99": 672
+      },
+      "totalRequests": 2600,
+      "non2xx": 0,
+      "errors": 0,
+      "timeouts": 0
+    },
+    {
+      "name": "task creation @ 20 conns (write path with OCC)",
+      "url": "http://localhost:<port>/api/v1/projects/6acef7ba9dc810d0aeebd43e/tasks",
+      "method": "POST",
+      "connections": 20,
+      "durationSeconds": 10,
+      "requestsPerSecond": 98,
+      "latencyMs": {
+        "average": 203.15,
+        "p50": 202,
+        "p97_5": 278,
+        "p99": 280
+      },
+      "totalRequests": 980,
+      "non2xx": 0,
+      "errors": 0,
+      "timeouts": 0
+    }
+  ]
+}
