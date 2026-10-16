@@ -18,11 +18,23 @@ import { RoleBadge } from '@/components/common/badges'
 import { Avatar } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
 import { EmptyState, LoadingScreen } from '@/components/ui/feedback'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { canManage, useWorkspace } from '@/hooks/useWorkspace'
 import { useAuthStore } from '@/stores/auth'
 
@@ -44,7 +56,8 @@ function InviteDialog({ workspaceId }: { workspaceId: string }): ReactElement {
       setCreated(payload.invitation)
       void queryClient.invalidateQueries({ queryKey: qk.invitations(workspaceId) })
     },
-    onError: (err) => setError(err instanceof ApiError ? err.message : 'Could not send the invitation'),
+    onError: (err) =>
+      setError(err instanceof ApiError ? err.message : 'Could not send the invitation'),
   })
 
   function onSubmit(event: FormEvent): void {
@@ -138,12 +151,16 @@ function InviteDialog({ workspaceId }: { workspaceId: string }): ReactElement {
                 </SelectContent>
               </Select>
               <p className="text-xs text-muted-foreground">
-                Viewers read only · Members create and edit work · Admins manage people and settings.
+                Viewers read only · Members create and edit work · Admins manage people and
+                settings.
               </p>
             </div>
 
             {error ? (
-              <p role="alert" className="rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive">
+              <p
+                role="alert"
+                className="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2.5 text-sm leading-relaxed text-destructive"
+              >
                 {error}
               </p>
             ) : null}
@@ -192,7 +209,8 @@ export function TeamPage(): ReactElement {
       toast.success('Role updated')
       invalidate()
     },
-    onError: (error) => toast.error(error instanceof ApiError ? error.message : 'Could not change the role'),
+    onError: (error) =>
+      toast.error(error instanceof ApiError ? error.message : 'Could not change the role'),
   })
 
   const removeMember = useMutation({
@@ -201,7 +219,8 @@ export function TeamPage(): ReactElement {
       toast.success('Member removed')
       invalidate()
     },
-    onError: (error) => toast.error(error instanceof ApiError ? error.message : 'Could not remove the member'),
+    onError: (error) =>
+      toast.error(error instanceof ApiError ? error.message : 'Could not remove the member'),
   })
 
   const revokeInvitation = useMutation({
@@ -221,6 +240,7 @@ export function TeamPage(): ReactElement {
   return (
     <div className="mx-auto max-w-4xl">
       <PageHeader
+        eyebrow="Access"
         title="Team"
         description={`${members.length} member${members.length === 1 ? '' : 's'} in ${workspace.name}`}
         actions={manageable ? <InviteDialog workspaceId={workspace.id} /> : undefined}
@@ -236,16 +256,23 @@ export function TeamPage(): ReactElement {
               const isSelf = member.userId === currentUser?.id
               const canEditThis = manageable && !isSelf && member.role !== 'owner'
               return (
-                <div key={member.userId} className="flex flex-wrap items-center gap-3 px-5 py-3">
+                <div
+                  key={member.userId}
+                  className="flex flex-wrap items-center gap-3 px-5 py-3.5 transition-colors duration-150 hover:bg-surface-2/50"
+                >
                   <Avatar name={member.name} src={member.avatarUrl} seed={member.userId} />
                   <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-medium">
+                    <p className="truncate text-sm font-medium tracking-tight">
                       {member.name}
-                      {isSelf ? <span className="ml-2 text-xs text-muted-foreground">(you)</span> : null}
+                      {isSelf ? (
+                        <span className="ml-2 text-[11px] text-muted-foreground">(you)</span>
+                      ) : null}
                     </p>
-                    <p className="truncate text-xs text-muted-foreground">{member.email}</p>
+                    <p className="ff-num truncate text-[10px] text-muted-foreground">
+                      {member.email}
+                    </p>
                   </div>
-                  <span className="hidden text-xs text-muted-foreground sm:block">
+                  <span className="ff-num hidden text-[10px] uppercase text-muted-foreground sm:block">
                     joined {formatDate(member.joinedAt)}
                   </span>
 
@@ -300,11 +327,16 @@ export function TeamPage(): ReactElement {
             ) : (
               <div className="divide-y divide-border">
                 {invitations.map((invitation) => (
-                  <div key={invitation.id} className="flex flex-wrap items-center gap-3 px-5 py-3">
+                  <div
+                    key={invitation.id}
+                    className="flex flex-wrap items-center gap-3 px-5 py-3.5 transition-colors duration-150 hover:bg-surface-2/50"
+                  >
                     <Mail className="h-4 w-4 text-muted-foreground" />
                     <div className="min-w-0 flex-1">
-                      <p className="truncate text-sm">{invitation.email}</p>
-                      <p className="text-xs text-muted-foreground">
+                      <p className="truncate text-sm font-medium tracking-tight">
+                        {invitation.email}
+                      </p>
+                      <p className="ff-num text-[10px] uppercase text-muted-foreground">
                         expires {formatDate(invitation.expiresAt)}
                         {invitation.invitedBy ? ` · invited by ${invitation.invitedBy.name}` : ''}
                       </p>

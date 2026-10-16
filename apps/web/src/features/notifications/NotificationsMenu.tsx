@@ -54,7 +54,7 @@ export function NotificationsMenu(): ReactElement {
         <Button variant="ghost" size="icon" className="relative" aria-label="Notifications">
           <Bell />
           {unread > 0 ? (
-            <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1 text-[10px] font-semibold text-primary-foreground">
+            <span className="ff-num absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1 text-[10px] font-semibold text-primary-foreground">
               {unread > 9 ? '9+' : unread}
             </span>
           ) : null}
@@ -66,7 +66,7 @@ export function NotificationsMenu(): ReactElement {
           <DropdownMenuLabel className="p-0">Notifications</DropdownMenuLabel>
           {unread > 0 ? (
             <button
-              className="text-xs text-primary hover:underline"
+              className="text-xs text-primary transition-colors duration-150 hover:underline"
               onClick={() => markAll.mutate()}
             >
               Mark all read
@@ -101,7 +101,7 @@ export function NotificationsMenu(): ReactElement {
                       {notification.body}
                     </span>
                   ) : null}
-                  <span className="block text-[11px] text-muted-foreground">
+                  <span className="ff-num block text-[10px] uppercase text-muted-foreground">
                     {formatRelative(notification.createdAt)}
                   </span>
                 </span>

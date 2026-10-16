@@ -282,12 +282,15 @@ function TaskDialogForm({
       </div>
 
       {error ? (
-        <p role="alert" className="rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive">
+        <p
+          role="alert"
+          className="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2.5 text-sm leading-relaxed text-destructive"
+        >
           {error}
         </p>
       ) : null}
 
-      <div className="flex items-center justify-between gap-2 pt-2">
+      <div className="sticky bottom-0 z-10 -mx-6 -mb-6 flex items-center justify-between gap-2 border-t border-border bg-surface-1 px-6 py-4">
         {task ? (
           <Button
             type="button"

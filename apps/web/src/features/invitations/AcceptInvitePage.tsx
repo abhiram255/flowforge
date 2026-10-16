@@ -28,7 +28,8 @@ export function AcceptInvitePage(): ReactElement {
 
   const previewQuery = useQuery({
     queryKey: ['invitation', token],
-    queryFn: () => api.get<{ invitation: InvitationPreview }>(`/invitations/${token}`, { auth: false }),
+    queryFn: () =>
+      api.get<{ invitation: InvitationPreview }>(`/invitations/${token}`, { auth: false }),
     retry: false,
   })
 
@@ -48,12 +49,12 @@ export function AcceptInvitePage(): ReactElement {
 
   return (
     <div className="flex min-h-screen items-center justify-center px-6 py-12">
-      <Card className="w-full max-w-md">
+      <Card className="ff-brackets w-full max-w-md">
         <CardHeader>
-          <div className="mb-2 flex h-10 w-10 items-center justify-center rounded-lg bg-primary/15 text-primary">
+          <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-md border border-primary/35 bg-primary-soft text-primary">
             <Building2 className="h-5 w-5" />
           </div>
-          <CardTitle className="text-lg">Workspace invitation</CardTitle>
+          <CardTitle className="text-lg tracking-[-0.02em]">Workspace invitation</CardTitle>
           <CardDescription>
             {previewQuery.isLoading ? 'Checking your invitation…' : null}
             {previewQuery.isError ? 'This invitation is invalid, expired or already used.' : null}
@@ -65,9 +66,11 @@ export function AcceptInvitePage(): ReactElement {
 
         <CardContent className="space-y-4">
           {previewQuery.data ? (
-            <div className="rounded-lg border border-border bg-muted/40 p-4">
-              <p className="text-sm font-semibold">{previewQuery.data.invitation.workspaceName}</p>
-              <p className="text-xs text-muted-foreground">
+            <div className="rounded-md border border-border bg-surface-2/40 p-4">
+              <p className="text-sm font-semibold tracking-tight">
+                {previewQuery.data.invitation.workspaceName}
+              </p>
+              <p className="ff-num mt-1 text-[10px] uppercase text-muted-foreground">
                 For {previewQuery.data.invitation.email}
               </p>
             </div>
@@ -94,7 +97,7 @@ export function AcceptInvitePage(): ReactElement {
           ) : (
             <div className="space-y-3">
               {user && previewQuery.data && user.email !== previewQuery.data.invitation.email ? (
-                <p className="rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive">
+                <p className="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2.5 text-sm leading-relaxed text-destructive">
                   Signed in as {user.email} — this invitation was issued to{' '}
                   {previewQuery.data.invitation.email}.
                 </p>

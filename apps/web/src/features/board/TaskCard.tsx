@@ -35,23 +35,24 @@ export function TaskCard({
       {...dragListeners}
       onClick={() => onOpen?.(task)}
       className={cn(
-        'cursor-pointer rounded-lg border border-border bg-card p-3 shadow-xs transition-shadow hover:shadow-md',
-        isDragging && 'cursor-grabbing opacity-60 shadow-lg ring-2 ring-primary/40',
+        'ff-panel ff-panel-hover cursor-pointer rounded-md p-3',
+        isDragging &&
+          'cursor-grabbing rotate-[0.5deg] opacity-75 shadow-glow ring-1 ring-primary/50',
       )}
     >
       <div className="flex items-start justify-between gap-2">
-        <span className="font-mono text-[11px] text-muted-foreground">{task.key}</span>
+        <span className="ff-num text-[10px] uppercase text-muted-foreground">{task.key}</span>
         <PriorityBadge priority={task.priority} />
       </div>
 
       <p className="mt-2 line-clamp-2 text-sm font-medium leading-snug">{task.title}</p>
 
       {task.labels.length > 0 ? (
-        <div className="mt-2 flex flex-wrap gap-1">
+        <div className="mt-2.5 flex flex-wrap gap-1">
           {task.labels.slice(0, 3).map((label) => (
             <span
               key={label}
-              className="rounded-full bg-accent px-1.5 py-0.5 text-[10px] font-medium text-accent-foreground"
+              className="rounded-sm border border-border bg-surface-2 px-1.5 py-0.5 text-[10px] font-medium leading-none text-muted-foreground"
             >
               {label}
             </span>
@@ -60,19 +61,19 @@ export function TaskCard({
       ) : null}
 
       <div className="mt-3 flex items-center justify-between gap-2">
-        <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
+        <div className="ff-num flex items-center gap-2 text-[10px] text-muted-foreground">
           {(task.subtaskCount ?? 0) > 0 ? (
-            <span className="flex items-center gap-0.5">
+            <span className="flex items-center gap-1">
               <ListTree className="h-3 w-3" /> {task.subtaskCount}
             </span>
           ) : null}
           {(task.commentCount ?? 0) > 0 ? (
-            <span className="flex items-center gap-0.5">
+            <span className="flex items-center gap-1">
               <MessageSquare className="h-3 w-3" /> {task.commentCount}
             </span>
           ) : null}
           {(task.attachmentCount ?? 0) > 0 ? (
-            <span className="flex items-center gap-0.5">
+            <span className="flex items-center gap-1">
               <Paperclip className="h-3 w-3" /> {task.attachmentCount}
             </span>
           ) : null}
@@ -82,7 +83,7 @@ export function TaskCard({
         {task.assignees.length > 0 ? (
           <AvatarGroup people={task.assignees} max={3} />
         ) : (
-          <Avatar name="Unassigned" seed="unassigned" className="h-6 w-6 opacity-40" />
+          <Avatar name="Unassigned" seed="unassigned" className="h-6 w-6 rounded-sm opacity-40" />
         )}
       </div>
     </article>

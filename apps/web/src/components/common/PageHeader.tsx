@@ -2,23 +2,38 @@ import type { ReactElement, ReactNode } from 'react'
 import { cn } from '@/lib/utils'
 
 export function PageHeader({
+  eyebrow,
   title,
   description,
   actions,
   className,
 }: {
+  eyebrow?: ReactNode
   title: ReactNode
   description?: ReactNode
   actions?: ReactNode
   className?: string
 }): ReactElement {
   return (
-    <div className={cn('mb-6 flex flex-wrap items-start justify-between gap-3', className)}>
-      <div>
-        <h1 className="text-xl font-semibold tracking-tight">{title}</h1>
-        {description ? <p className="mt-1 text-sm text-muted-foreground">{description}</p> : null}
+    <div className={cn('mb-6', className)}>
+      <div className="flex flex-wrap items-end justify-between gap-4">
+        <div className="min-w-0">
+          {eyebrow ? (
+            <p className="ff-label mb-2.5 flex items-center gap-2 text-muted-foreground">
+              <span aria-hidden className="h-3 w-[2px] rounded-full bg-primary" />
+              {eyebrow}
+            </p>
+          ) : null}
+          <h1 className="text-xl font-semibold tracking-[-0.02em]">{title}</h1>
+          {description ? (
+            <p className="mt-1.5 max-w-2xl text-sm leading-relaxed text-muted-foreground">
+              {description}
+            </p>
+          ) : null}
+        </div>
+        {actions ? <div className="flex flex-wrap items-center gap-2">{actions}</div> : null}
       </div>
-      {actions ? <div className="flex items-center gap-2">{actions}</div> : null}
+      <div className="ff-hair mt-5" />
     </div>
   )
 }
@@ -35,18 +50,25 @@ export function StatCard({
   tone?: 'default' | 'danger' | 'success'
 }): ReactElement {
   return (
-    <div className="rounded-xl border border-border bg-card p-4">
-      <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{label}</p>
+    <div
+      className={cn(
+        'ff-panel rounded-lg border-l-2 p-4',
+        tone === 'default' && 'border-l-border-strong',
+        tone === 'danger' && 'border-l-destructive',
+        tone === 'success' && 'border-l-success',
+      )}
+    >
+      <p className="ff-label text-muted-foreground">{label}</p>
       <p
         className={cn(
-          'mt-1.5 text-2xl font-semibold tabular-nums',
-          tone === 'danger' && 'text-rose-500',
-          tone === 'success' && 'text-emerald-500',
+          'ff-num mt-2.5 text-[26px] font-semibold leading-none',
+          tone === 'danger' && 'text-destructive',
+          tone === 'success' && 'text-success',
         )}
       >
         {value}
       </p>
-      {hint ? <p className="mt-1 text-xs text-muted-foreground">{hint}</p> : null}
+      {hint ? <p className="mt-2 text-[11px] leading-tight text-muted-foreground">{hint}</p> : null}
     </div>
   )
 }

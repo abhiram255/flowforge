@@ -52,7 +52,8 @@ export function ProjectDialog({
     onSuccess: (payload) => {
       toast.success(isEdit ? 'Project updated' : `Project ${payload.project.key} created`)
       void queryClient.invalidateQueries({ queryKey: qk.projects(workspaceId) })
-      if (isEdit && project) void queryClient.invalidateQueries({ queryKey: qk.project(project.id) })
+      if (isEdit && project)
+        void queryClient.invalidateQueries({ queryKey: qk.project(project.id) })
       setOpen(false)
       setError(null)
     },
@@ -135,7 +136,10 @@ export function ProjectDialog({
           </div>
 
           {error ? (
-            <p role="alert" className="rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive">
+            <p
+              role="alert"
+              className="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2.5 text-sm leading-relaxed text-destructive"
+            >
               {error}
             </p>
           ) : null}

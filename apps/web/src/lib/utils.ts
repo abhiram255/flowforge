@@ -12,12 +12,12 @@ export function initials(name: string): string {
 /** Deterministic avatar tint derived from the user id — no image hosting needed. */
 export function avatarGradient(seed: string): string {
   const palettes = [
-    'from-violet-500 to-fuchsia-500',
-    'from-sky-500 to-indigo-500',
-    'from-emerald-500 to-teal-500',
-    'from-amber-500 to-orange-500',
-    'from-rose-500 to-pink-500',
-    'from-cyan-500 to-blue-500',
+    'from-[oklch(0.55_0.11_58)] to-[oklch(0.45_0.09_28)]',
+    'from-[oklch(0.52_0.08_215)] to-[oklch(0.44_0.07_255)]',
+    'from-[oklch(0.52_0.09_158)] to-[oklch(0.44_0.07_182)]',
+    'from-[oklch(0.55_0.09_95)] to-[oklch(0.45_0.07_68)]',
+    'from-[oklch(0.5_0.09_330)] to-[oklch(0.42_0.08_300)]',
+    'from-[oklch(0.54_0.08_22)] to-[oklch(0.44_0.09_352)]',
   ]
   let hash = 0
   for (const char of seed) hash = (hash * 31 + char.charCodeAt(0)) % 997
@@ -25,25 +25,33 @@ export function avatarGradient(seed: string): string {
 }
 
 export const statusStyles: Record<TaskStatus, string> = {
-  backlog: 'bg-zinc-500/15 text-zinc-600 dark:text-zinc-300 border-zinc-500/25',
-  todo: 'bg-sky-500/15 text-sky-700 dark:text-sky-300 border-sky-500/25',
-  in_progress: 'bg-violet-500/15 text-violet-700 dark:text-violet-300 border-violet-500/25',
-  in_review: 'bg-amber-500/15 text-amber-700 dark:text-amber-300 border-amber-500/25',
-  done: 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-500/25',
+  backlog: 'border-status-backlog/30 bg-status-backlog/10 text-status-backlog',
+  todo: 'border-status-todo/30 bg-status-todo/10 text-status-todo',
+  in_progress: 'border-status-progress/35 bg-status-progress/12 text-status-progress',
+  in_review: 'border-status-review/35 bg-status-review/12 text-status-review',
+  done: 'border-status-done/30 bg-status-done/12 text-status-done',
+}
+
+export const statusAccent: Record<TaskStatus, string> = {
+  backlog: 'bg-status-backlog',
+  todo: 'bg-status-todo',
+  in_progress: 'bg-status-progress',
+  in_review: 'bg-status-review',
+  done: 'bg-status-done',
 }
 
 export const priorityStyles: Record<TaskPriority, string> = {
-  low: 'bg-zinc-500/15 text-zinc-600 dark:text-zinc-300 border-zinc-500/25',
-  medium: 'bg-sky-500/15 text-sky-700 dark:text-sky-300 border-sky-500/25',
-  high: 'bg-amber-500/15 text-amber-700 dark:text-amber-300 border-amber-500/25',
-  urgent: 'bg-rose-500/15 text-rose-700 dark:text-rose-300 border-rose-500/25',
+  low: 'border-status-backlog/30 bg-status-backlog/10 text-status-backlog',
+  medium: 'border-status-todo/30 bg-status-todo/10 text-status-todo',
+  high: 'border-status-review/35 bg-status-review/12 text-status-review',
+  urgent: 'border-destructive/35 bg-destructive/12 text-destructive',
 }
 
 export const roleStyles: Record<Role, string> = {
-  owner: 'bg-violet-500/15 text-violet-700 dark:text-violet-300 border-violet-500/30',
-  admin: 'bg-sky-500/15 text-sky-700 dark:text-sky-300 border-sky-500/30',
-  member: 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-500/30',
-  viewer: 'bg-zinc-500/15 text-zinc-600 dark:text-zinc-300 border-zinc-500/30',
+  owner: 'border-status-progress/35 bg-status-progress/12 text-status-progress',
+  admin: 'border-status-todo/30 bg-status-todo/10 text-status-todo',
+  member: 'border-status-done/30 bg-status-done/12 text-status-done',
+  viewer: 'border-status-backlog/30 bg-status-backlog/10 text-status-backlog',
 }
 
 export function formatDate(value: string | Date | null | undefined): string {
@@ -80,9 +88,9 @@ export function dueDateMeta(value: string | null | undefined): {
   const startOfDue = new Date(due.getFullYear(), due.getMonth(), due.getDate())
   const diffDays = Math.round((startOfDue.getTime() - startOfToday.getTime()) / 86_400_000)
 
-  if (diffDays < 0) return { label: `Overdue · ${formatDate(due)}`, className: 'text-rose-500' }
-  if (diffDays === 0) return { label: 'Due today', className: 'text-amber-500' }
-  if (diffDays === 1) return { label: 'Due tomorrow', className: 'text-amber-500' }
+  if (diffDays < 0) return { label: `Overdue · ${formatDate(due)}`, className: 'text-destructive' }
+  if (diffDays === 0) return { label: 'Due today', className: 'text-warning' }
+  if (diffDays === 1) return { label: 'Due tomorrow', className: 'text-warning' }
   if (diffDays <= 7) return { label: `Due ${formatDate(due)}`, className: 'text-foreground' }
   return { label: formatDate(due), className: 'text-muted-foreground' }
 }

@@ -14,7 +14,7 @@ export const DropdownMenuContent = React.forwardRef<
       ref={ref}
       sideOffset={sideOffset}
       className={cn(
-        'z-50 min-w-[10rem] overflow-hidden rounded-lg border border-border bg-card p-1 shadow-xl',
+        'z-50 min-w-[10rem] overflow-hidden rounded-lg border border-border-strong bg-surface-1 p-1 shadow-overlay data-[state=open]:animate-rise',
         className,
       )}
       {...props}
@@ -30,7 +30,7 @@ export const DropdownMenuItem = React.forwardRef<
   <DropdownMenuPrimitive.Item
     ref={ref}
     className={cn(
-      'relative flex cursor-pointer select-none items-center gap-2 rounded-md px-2 py-1.5 text-sm outline-none transition-colors data-[highlighted]:bg-muted data-[disabled]:pointer-events-none data-[disabled]:opacity-50',
+      'relative flex cursor-pointer select-none items-center gap-2 rounded-sm border-l-2 border-l-transparent px-2 py-1.5 text-sm outline-none transition-colors duration-100 data-[highlighted]:border-l-primary data-[highlighted]:bg-surface-3 data-[disabled]:pointer-events-none data-[disabled]:opacity-50',
       className,
     )}
     {...props}
@@ -56,7 +56,7 @@ export const DropdownMenuLabel = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <DropdownMenuPrimitive.Label
     ref={ref}
-    className={cn('px-2 py-1.5 text-xs font-medium text-muted-foreground', className)}
+    className={cn('ff-label px-2 py-1.5 text-muted-foreground', className)}
     {...props}
   />
 ))
@@ -70,7 +70,7 @@ export const DropdownMenuCheckboxItem = React.forwardRef<
     ref={ref}
     checked={checked}
     className={cn(
-      'relative flex cursor-pointer select-none items-center gap-2 rounded-md py-1.5 pl-8 pr-2 text-sm outline-none transition-colors data-[highlighted]:bg-muted data-[disabled]:pointer-events-none data-[disabled]:opacity-50',
+      'relative flex cursor-pointer select-none items-center gap-2 rounded-sm border-l-2 border-l-transparent py-1.5 pl-8 pr-2 text-sm outline-none transition-colors duration-100 data-[highlighted]:border-l-primary data-[highlighted]:bg-surface-3 data-[disabled]:pointer-events-none data-[disabled]:opacity-50',
       className,
     )}
     {...props}

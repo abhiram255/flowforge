@@ -30,7 +30,13 @@ import { AvatarGroup } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
 import { EmptyState, LoadingScreen } from '@/components/ui/feedback'
 import { Input } from '@/components/ui/input'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { canWrite, useWorkspace } from '@/hooks/useWorkspace'
 import { useRealtimeStore } from '@/stores/realtime'
 import { KanbanColumn } from './KanbanColumn'
@@ -100,7 +106,8 @@ export function BoardPage(): ReactElement {
     }
   }, [projectId])
 
-  const viewers = useRealtimeStore((state) => (projectId ? state.projectViewers[projectId] : undefined)) ?? []
+  const viewers =
+    useRealtimeStore((state) => (projectId ? state.projectViewers[projectId] : undefined)) ?? []
   const viewerPeople = viewers
     .map((id) => members.find((member) => member.userId === id))
     .filter((member): member is MemberDTO => Boolean(member))
@@ -144,7 +151,9 @@ export function BoardPage(): ReactElement {
         ? {
             ...old,
             data: old.data.map((entry) =>
-              entry.id === task.id ? { ...entry, status: move.status, position: move.position } : entry,
+              entry.id === task.id
+                ? { ...entry, status: move.status, position: move.position }
+                : entry,
             ),
           }
         : old,
@@ -156,7 +165,9 @@ export function BoardPage(): ReactElement {
     return <LoadingScreen label="Loading board…" />
   }
   if (!projectQuery.data) {
-    return <EmptyState title="Project not found" description="It may have been deleted or archived." />
+    return (
+      <EmptyState title="Project not found" description="It may have been deleted or archived." />
+    )
   }
 
   const project = projectQuery.data.project
@@ -166,23 +177,38 @@ export function BoardPage(): ReactElement {
   return (
     <div className="flex h-full min-h-0 flex-col">
       {/* Board header */}
-      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+      <div className="mb-4 flex flex-wrap items-end justify-between gap-4">
         <div className="min-w-0">
-          <div className="flex items-center gap-2 text-xs text-muted-foreground">
-            <Link to={`/app/${workspace.slug}/projects`} className="hover:underline">
+          <p className="ff-label flex items-center gap-2 text-muted-foreground">
+            <Link
+              to={`/app/${workspace.slug}/projects`}
+              className="transition-colors duration-150 hover:text-foreground"
+            >
               Projects
             </Link>
-            <span>/</span>
-            <span className="font-mono">{project.key}</span>
-          </div>
-          <h1 className="mt-1 truncate text-xl font-semibold tracking-tight">{project.name}</h1>
+            <span aria-hidden className="h-3 w-px bg-border-strong" />
+            <span className="ff-num">{project.key}</span>
+          </p>
+          <h1 className="mt-2 truncate text-xl font-semibold tracking-[-0.02em]">{project.name}</h1>
+          {project.description ? (
+            <p className="mt-1 max-w-2xl truncate text-sm text-muted-foreground">
+              {project.description}
+            </p>
+          ) : null}
         </div>
 
         <div className="flex items-center gap-2">
           {viewerPeople.length > 0 ? (
-            <div className="hidden items-center gap-2 rounded-lg border border-border px-2 py-1 sm:flex">
-              <AvatarGroup people={viewerPeople.map((m) => ({ id: m.userId, name: m.name, avatarUrl: m.avatarUrl }))} max={4} />
-              <span className="text-xs text-muted-foreground">viewing</span>
+            <div className="hidden items-center gap-2 rounded-md border border-border bg-surface-1/70 px-2 py-1 sm:flex">
+              <AvatarGroup
+                people={viewerPeople.map((m) => ({
+                  id: m.userId,
+                  name: m.name,
+                  avatarUrl: m.avatarUrl,
+                }))}
+                max={4}
+              />
+              <span className="ff-label text-muted-foreground">Viewing</span>
             </div>
           ) : null}
           {writable ? (
@@ -194,7 +220,7 @@ export function BoardPage(): ReactElement {
       </div>
 
       {/* Filters */}
-      <div className="mb-4 flex flex-wrap items-center gap-2">
+      <div className="mb-4 flex flex-wrap items-center gap-2 rounded-lg border border-border bg-surface-1/60 p-2">
         <form
           className="relative"
           onSubmit={(event) => {
@@ -207,6 +233,7 @@ export function BoardPage(): ReactElement {
             value={search}
             onChange={(event) => setSearch(event.target.value)}
             placeholder="Search tasks…"
+            aria-label="Search tasks"
             className="w-56 pl-8"
           />
         </form>
@@ -214,7 +241,10 @@ export function BoardPage(): ReactElement {
         <Select
           value={filters.assigneeId ?? 'all'}
           onValueChange={(value) =>
-            setFilters((current) => ({ ...current, assigneeId: value === 'all' ? undefined : value }))
+            setFilters((current) => ({
+              ...current,
+              assigneeId: value === 'all' ? undefined : value,
+            }))
           }
         >
           <SelectTrigger className="w-44">
@@ -264,7 +294,7 @@ export function BoardPage(): ReactElement {
             <X /> Clear
           </Button>
         ) : (
-          <span className="flex items-center gap-1 text-xs text-muted-foreground">
+          <span className="ff-label ml-auto flex items-center gap-1.5 pr-1.5 text-muted-foreground">
             <Filter className="h-3.5 w-3.5" /> {tasks.length} tasks
           </span>
         )}
@@ -277,7 +307,7 @@ export function BoardPage(): ReactElement {
         onDragStart={onDragStart}
         onDragEnd={onDragEnd}
       >
-        <div className="scrollbar-thin flex flex-1 gap-4 overflow-x-auto pb-4">
+        <div className="scrollbar-thin ff-stagger flex flex-1 gap-4 overflow-x-auto pb-4">
           {TASK_STATUSES.map((status) => (
             <KanbanColumn
               key={status}
@@ -294,8 +324,8 @@ export function BoardPage(): ReactElement {
       </DndContext>
 
       {tasks.length === 0 && !hasFilters ? (
-        <p className="pb-2 text-center text-xs text-muted-foreground">
-          Board is empty — create the first task{writable ? ' with the New task button' : ''}.
+        <p className="ff-label pb-2 text-center text-muted-foreground/70">
+          Board is empty — create the first task{writable ? ' with the new task button' : ''}
         </p>
       ) : null}
 

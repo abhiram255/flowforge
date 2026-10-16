@@ -5,7 +5,14 @@ import type { WorkspaceDTO } from '@flowforge/shared'
 import api, { ApiError } from '@/lib/api'
 import { qk } from '@/lib/query'
 import { Button } from '@/components/ui/button'
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { toast } from 'sonner'
@@ -41,7 +48,8 @@ export function WorkspaceCreateDialog({
       if (onCreated) onCreated(payload.workspace)
       else navigate(`/app/${payload.workspace.slug}`)
     },
-    onError: (err) => setError(err instanceof ApiError ? err.message : 'Could not create the workspace'),
+    onError: (err) =>
+      setError(err instanceof ApiError ? err.message : 'Could not create the workspace'),
   })
 
   function onSubmit(event: FormEvent): void {
@@ -78,7 +86,10 @@ export function WorkspaceCreateDialog({
           </div>
 
           {error ? (
-            <p role="alert" className="rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive">
+            <p
+              role="alert"
+              className="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2.5 text-sm leading-relaxed text-destructive"
+            >
               {error}
             </p>
           ) : null}

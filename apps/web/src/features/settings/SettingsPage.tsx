@@ -2,7 +2,13 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { AlertTriangle, LogOut, ShieldCheck } from 'lucide-react'
 import { useState, type FormEvent, type ReactElement, type ReactNode } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import { THEMES, type SessionDTO, type Theme, type UserDTO, type WorkspaceDTO } from '@flowforge/shared'
+import {
+  THEMES,
+  type SessionDTO,
+  type Theme,
+  type UserDTO,
+  type WorkspaceDTO,
+} from '@flowforge/shared'
 import api, { ApiError } from '@/lib/api'
 import { qk } from '@/lib/query'
 import { cn, formatRelative } from '@/lib/utils'
@@ -13,7 +19,13 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { Spinner } from '@/components/ui/feedback'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { canManage, useWorkspace } from '@/hooks/useWorkspace'
@@ -47,14 +59,14 @@ function Toggle({
         disabled={disabled}
         onClick={() => onChange(!checked)}
         className={cn(
-          'relative h-5 w-9 shrink-0 rounded-full transition-colors disabled:opacity-50',
-          checked ? 'bg-primary' : 'bg-muted',
+          'relative h-5 w-9 shrink-0 rounded-full border transition-colors duration-150 ease-quart before:absolute before:-inset-x-3 before:-inset-y-3.5 before:content-[""] disabled:opacity-50',
+          checked ? 'border-primary/50 bg-primary' : 'border-border-strong bg-surface-3',
         )}
       >
         <span
           className={cn(
-            'absolute top-0.5 h-4 w-4 rounded-full bg-white shadow transition-transform',
-            checked ? 'translate-x-[18px]' : 'translate-x-0.5',
+            'absolute top-0.5 h-4 w-4 rounded-full transition-transform duration-150 ease-quart',
+            checked ? 'translate-x-[18px] bg-background' : 'translate-x-0.5 bg-muted-foreground',
           )}
         />
       </button>
@@ -63,7 +75,7 @@ function Toggle({
 }
 
 function SettingRow({ children }: { children: ReactNode }): ReactElement {
-  return <div className="space-y-4 py-1">{children}</div>
+  return <div className="space-y-5 py-1">{children}</div>
 }
 
 export function SettingsPage(): ReactElement {
@@ -176,10 +188,14 @@ export function SettingsPage(): ReactElement {
 
   return (
     <div className="mx-auto max-w-3xl">
-      <PageHeader title="Settings" description="Workspace configuration, your profile and security." />
+      <PageHeader
+        eyebrow="Configuration"
+        title="Settings"
+        description="Workspace configuration, your profile and security."
+      />
 
       <Tabs value={tab} onValueChange={(value) => setParams({ tab: value })}>
-        <TabsList className="flex-wrap">
+        <TabsList>
           <TabsTrigger value="workspace">Workspace</TabsTrigger>
           <TabsTrigger value="profile">Profile</TabsTrigger>
           <TabsTrigger value="notifications">Notifications</TabsTrigger>
@@ -212,7 +228,11 @@ export function SettingsPage(): ReactElement {
                   </div>
                   <div className="space-y-1.5">
                     <Label>Workspace URL</Label>
-                    <Input value={`/app/${workspace.slug}`} readOnly className="font-mono text-xs" />
+                    <Input
+                      value={`/app/${workspace.slug}`}
+                      readOnly
+                      className="font-mono text-xs"
+                    />
                     <p className="text-xs text-muted-foreground">
                       Slugs are unique across FlowForge; contact support to change it.
                     </p>
@@ -334,13 +354,13 @@ export function SettingsPage(): ReactElement {
               {(sessionsQuery.data?.data ?? []).map((session) => (
                 <div
                   key={session.id}
-                  className="flex items-center justify-between gap-3 rounded-lg border border-border px-3 py-2"
+                  className="flex items-center justify-between gap-3 rounded-md border border-border bg-surface-2/40 px-3 py-2.5"
                 >
                   <div className="min-w-0">
-                    <p className="truncate text-sm">
-                      {session.current ? 'This device' : session.userAgent ?? 'Unknown device'}
+                    <p className="truncate text-sm tracking-tight">
+                      {session.current ? 'This device' : (session.userAgent ?? 'Unknown device')}
                     </p>
-                    <p className="text-xs text-muted-foreground">
+                    <p className="ff-num text-[10px] uppercase text-muted-foreground">
                       {session.ip ?? 'unknown ip'} · started {formatRelative(session.createdAt)}
                     </p>
                   </div>
@@ -353,7 +373,10 @@ export function SettingsPage(): ReactElement {
                       Revoke
                     </Button>
                   ) : (
-                    <span className="text-xs text-emerald-500">Current</span>
+                    <span className="ff-label flex items-center gap-1.5 text-success">
+                      <span aria-hidden className="h-1.5 w-1.5 rounded-full bg-success" />
+                      Current
+                    </span>
                   )}
                 </div>
               ))}

@@ -4,7 +4,7 @@ import { CSS } from '@dnd-kit/utilities'
 import { Plus } from 'lucide-react'
 import type { ReactElement } from 'react'
 import { TASK_STATUS_LABELS, type TaskDTO, type TaskStatus } from '@flowforge/shared'
-import { cn } from '@/lib/utils'
+import { cn, statusAccent } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { TaskCard } from './TaskCard'
 import { columnDropId } from './board-utils'
@@ -55,15 +55,21 @@ export function KanbanColumn({
   return (
     <section
       className={cn(
-        'flex w-[290px] shrink-0 flex-col rounded-xl border border-border bg-muted/40',
-        isOver && 'ring-2 ring-primary/40',
+        'ff-panel flex w-[292px] shrink-0 flex-col overflow-hidden rounded-lg',
+        isOver && 'border-primary/50 shadow-glow',
       )}
       data-testid={`column-${status}`}
     >
-      <header className="flex items-center justify-between px-3 py-2.5">
-        <div className="flex items-center gap-2">
-          <h3 className="text-sm font-semibold">{TASK_STATUS_LABELS[status]}</h3>
-          <span className="rounded-full bg-muted px-1.5 py-0.5 text-[11px] text-muted-foreground">
+      <span aria-hidden className={cn('h-[2px] w-full', statusAccent[status])} />
+
+      <header className="flex items-center justify-between gap-2 border-b border-border px-3 py-2.5">
+        <div className="flex min-w-0 items-center gap-2">
+          <span
+            aria-hidden
+            className={cn('h-1.5 w-1.5 shrink-0 rounded-full', statusAccent[status])}
+          />
+          <h3 className="ff-label truncate text-foreground">{TASK_STATUS_LABELS[status]}</h3>
+          <span className="ff-num rounded-sm border border-border bg-surface-2 px-1.5 py-0.5 text-[10px] leading-none text-muted-foreground">
             {tasks.length}
           </span>
         </div>
@@ -71,7 +77,7 @@ export function KanbanColumn({
           <Button
             variant="ghost"
             size="icon"
-            className="h-7 w-7"
+            className="h-7 w-7 ff-tap"
             onClick={() => onAddTask(status)}
             aria-label={`Add task to ${TASK_STATUS_LABELS[status]}`}
           >
@@ -80,16 +86,19 @@ export function KanbanColumn({
         ) : null}
       </header>
 
-      <div ref={setNodeRef} className="scrollbar-thin flex-1 space-y-2 overflow-y-auto px-2 pb-3">
-        <SortableContext items={tasks.map((task) => task.id)} strategy={verticalListSortingStrategy}>
+      <div ref={setNodeRef} className="scrollbar-thin flex-1 space-y-2 overflow-y-auto p-2">
+        <SortableContext
+          items={tasks.map((task) => task.id)}
+          strategy={verticalListSortingStrategy}
+        >
           {tasks.map((task) => (
             <SortableTaskCard key={task.id} task={task} onOpen={onOpenTask} />
           ))}
         </SortableContext>
 
         {tasks.length === 0 ? (
-          <p className="rounded-lg border border-dashed border-border px-3 py-6 text-center text-xs text-muted-foreground">
-            Drop tasks here
+          <p className="ff-label rounded-md border border-dashed border-border-strong/70 px-3 py-7 text-center text-muted-foreground/70">
+            Drop zone
           </p>
         ) : null}
       </div>

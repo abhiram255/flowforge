@@ -12,14 +12,16 @@ export function Avatar({ name, src, seed, className, ...props }: AvatarProps): R
   return (
     <AvatarPrimitive.Root
       className={cn(
-        'relative flex h-8 w-8 shrink-0 overflow-hidden rounded-full bg-gradient-to-br text-white',
+        'relative flex h-8 w-8 shrink-0 overflow-hidden rounded-md bg-gradient-to-br text-white shadow-[inset_0_0_0_1px_oklch(1_0_0/0.14)]',
         avatarGradient(seed ?? name),
         className,
       )}
       {...props}
     >
-      {src ? <AvatarPrimitive.Image src={src} alt={name} className="h-full w-full object-cover" /> : null}
-      <AvatarPrimitive.Fallback className="flex h-full w-full items-center justify-center text-xs font-semibold">
+      {src ? (
+        <AvatarPrimitive.Image src={src} alt={name} className="h-full w-full object-cover" />
+      ) : null}
+      <AvatarPrimitive.Fallback className="flex h-full w-full items-center justify-center font-mono text-[10px] font-semibold uppercase tracking-tight">
         {initials(name)}
       </AvatarPrimitive.Fallback>
     </AvatarPrimitive.Root>
@@ -40,18 +42,18 @@ export function AvatarGroup({
   const overflow = people.length - shown.length
 
   return (
-    <div className={cn('flex items-center -space-x-2', className)}>
+    <div className={cn('flex items-center -space-x-1.5', className)}>
       {shown.map((person) => (
         <Avatar
           key={person.id}
           name={person.name}
           src={person.avatarUrl}
           seed={person.id}
-          className="h-6 w-6 ring-2 ring-card"
+          className="h-6 w-6 rounded-sm ring-2 ring-surface-1"
         />
       ))}
       {overflow > 0 ? (
-        <span className="flex h-6 w-6 items-center justify-center rounded-full bg-muted text-[10px] font-medium text-muted-foreground ring-2 ring-card">
+        <span className="ff-num flex h-6 w-6 items-center justify-center rounded-sm bg-surface-2 text-[10px] font-medium text-muted-foreground ring-2 ring-surface-1">
           +{overflow}
         </span>
       ) : null}

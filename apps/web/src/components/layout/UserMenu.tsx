@@ -38,7 +38,7 @@ export function UserMenu(): ReactElement {
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <button
-            className="rounded-full outline-none ring-ring/60 focus-visible:ring-2"
+            className="rounded-md transition-opacity duration-150 hover:opacity-85"
             aria-label="Account menu"
           >
             <Avatar name={user.name} src={user.avatarUrl} seed={user.id} />
@@ -46,8 +46,12 @@ export function UserMenu(): ReactElement {
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-56">
           <DropdownMenuLabel>
-            <span className="block text-sm font-medium text-foreground">{user.name}</span>
-            <span className="block truncate text-xs font-normal">{user.email}</span>
+            <span className="block text-sm font-medium normal-case tracking-normal text-foreground">
+              {user.name}
+            </span>
+            <span className="ff-num mt-1 block truncate text-[10px] font-normal normal-case">
+              {user.email}
+            </span>
           </DropdownMenuLabel>
           <DropdownMenuSeparator />
           <DropdownMenuItem

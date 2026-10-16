@@ -83,7 +83,10 @@ export function LoginPage(): ReactElement {
         </div>
 
         {error ? (
-          <p role="alert" className="rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive">
+          <p
+            role="alert"
+            className="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2.5 text-sm leading-relaxed text-destructive"
+          >
             {error}
           </p>
         ) : null}
@@ -95,7 +98,7 @@ export function LoginPage(): ReactElement {
         <button
           type="button"
           onClick={fillDemo}
-          className="w-full text-center text-xs text-muted-foreground hover:text-foreground"
+          className="w-full py-1 text-center text-xs text-muted-foreground transition-colors duration-150 hover:text-foreground"
         >
           Use demo credentials (seeded workspace)
         </button>

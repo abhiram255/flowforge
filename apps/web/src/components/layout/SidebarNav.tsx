@@ -1,10 +1,4 @@
-import {
-  BarChart3,
-  FolderKanban,
-  LayoutDashboard,
-  Settings,
-  Users,
-} from 'lucide-react'
+import { BarChart3, FolderKanban, LayoutDashboard, Settings, Users } from 'lucide-react'
 import type { ReactElement } from 'react'
 import { NavLink } from 'react-router-dom'
 import type { ProjectDTO, WorkspaceDTO } from '@flowforge/shared'
@@ -19,7 +13,7 @@ export function SidebarNav({
 }): ReactElement {
   if (!workspace) {
     return (
-      <p className="px-2 text-sm text-muted-foreground">
+      <p className="px-2 text-sm leading-relaxed text-muted-foreground">
         Create your first workspace to get started.
       </p>
     )
@@ -36,32 +30,46 @@ export function SidebarNav({
 
   return (
     <nav className="space-y-6">
-      <ul className="space-y-1">
-        {items.map((item) => (
-          <li key={item.label}>
-            <NavLink
-              to={item.to}
-              end={item.end}
-              className={({ isActive }) =>
-                cn(
-                  'flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground',
-                  isActive && 'bg-muted text-foreground',
-                )
-              }
-            >
-              <item.icon className="h-4 w-4" />
-              {item.label}
-            </NavLink>
-          </li>
-        ))}
-      </ul>
+      <div>
+        <p className="ff-label px-3 pb-2 text-muted-foreground">Navigation</p>
+        <ul className="space-y-0.5">
+          {items.map((item) => (
+            <li key={item.label}>
+              <NavLink
+                to={item.to}
+                end={item.end}
+                className={({ isActive }) =>
+                  cn(
+                    'group relative flex items-center gap-2.5 rounded-md py-2 pl-3 pr-2.5 text-sm font-medium transition-colors duration-150 ease-quart',
+                    isActive
+                      ? 'bg-primary-soft text-foreground'
+                      : 'text-muted-foreground hover:bg-surface-2 hover:text-foreground',
+                  )
+                }
+              >
+                {({ isActive }) => (
+                  <>
+                    <span
+                      aria-hidden
+                      className={cn(
+                        'absolute bottom-1.5 left-0 top-1.5 w-[2px] rounded-full transition-colors duration-150',
+                        isActive ? 'bg-primary' : 'bg-transparent',
+                      )}
+                    />
+                    <item.icon className={cn('h-4 w-4', isActive ? 'text-primary' : undefined)} />
+                    {item.label}
+                  </>
+                )}
+              </NavLink>
+            </li>
+          ))}
+        </ul>
+      </div>
 
       <div>
-        <p className="px-2.5 pb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
-          Projects
-        </p>
+        <p className="ff-label px-3 pb-2 text-muted-foreground">Projects</p>
         {projects.length === 0 ? (
-          <p className="px-2.5 text-sm text-muted-foreground">No projects yet</p>
+          <p className="px-3 text-sm text-muted-foreground">No projects yet</p>
         ) : (
           <ul className="space-y-0.5">
             {projects.slice(0, 8).map((project) => (
@@ -70,13 +78,15 @@ export function SidebarNav({
                   to={`${base}/projects/${project.id}`}
                   className={({ isActive }) =>
                     cn(
-                      'flex items-center gap-2.5 rounded-lg px-2.5 py-1.5 text-sm text-muted-foreground transition-colors hover:bg-muted hover:text-foreground',
-                      isActive && 'bg-muted text-foreground',
+                      'flex items-center gap-2.5 rounded-md px-2.5 py-1.5 text-sm transition-colors duration-150 ease-quart',
+                      isActive
+                        ? 'bg-primary-soft text-foreground'
+                        : 'text-muted-foreground hover:bg-surface-2 hover:text-foreground',
                     )
                   }
                 >
-                  <span className="flex h-5 w-5 items-center justify-center rounded bg-primary/15 text-[10px] font-semibold text-primary">
-                    {project.key.slice(0, 2)}
+                  <span className="ff-num flex h-5 min-w-5 items-center justify-center rounded-sm border border-border-strong/60 bg-surface-2 px-1 text-[9px] font-semibold uppercase text-muted-foreground">
+                    {project.key.slice(0, 3)}
                   </span>
                   <span className="truncate">{project.name}</span>
                 </NavLink>

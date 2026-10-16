@@ -24,17 +24,20 @@ export function useRealtime(workspaceId: string | undefined): void {
     if (!token) return
 
     const socket = connectSocket(token)
-    const { setOnline, setProjectViewers } = useRealtimeStore.getState()
+    const { setOnline, setProjectViewers, setLink } = useRealtimeStore.getState()
 
     const joinWorkspace = (): void => {
       if (workspaceId) socket.emit('workspace:join', { workspaceId }, () => undefined)
     }
 
     const handleConnect = (): void => {
+      setLink('live')
       joinWorkspace()
       // Reconnect sync: anything missed while offline is refetched.
       void queryClient.invalidateQueries()
     }
+
+    const handleDisconnect = (): void => setLink('offline')
 
     const invalidateAggregates = (): void => {
       void queryClient.invalidateQueries({ queryKey: qk.activityRoot })
@@ -94,6 +97,7 @@ export function useRealtime(workspaceId: string | undefined): void {
     }
 
     socket.on('connect', handleConnect)
+    socket.on('disconnect', handleDisconnect)
     socket.on('task:created', onTaskCreated)
     socket.on('task:updated', onTaskUpdated)
     socket.on('task:deleted', onTaskDeleted)
@@ -112,6 +116,7 @@ export function useRealtime(workspaceId: string | undefined): void {
     return () => {
       if (workspaceId) socket.emit('workspace:leave', { workspaceId })
       socket.off('connect', handleConnect)
+      socket.off('disconnect', handleDisconnect)
       socket.off('task:created', onTaskCreated)
       socket.off('task:updated', onTaskUpdated)
       socket.off('task:deleted', onTaskDeleted)

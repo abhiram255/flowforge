@@ -48,21 +48,23 @@ export function ActivityFeed({
   }
 
   return (
-    <ol className="space-y-3">
+    <ol className="relative space-y-4 before:absolute before:bottom-3 before:left-3 before:top-3 before:w-px before:bg-border">
       {entries.map((entry) => (
-        <li key={entry.id} className="flex items-start gap-3">
+        <li key={entry.id} className="relative flex items-start gap-3">
           <Avatar
             name={entry.actor?.name ?? 'System'}
             src={entry.actor?.avatarUrl ?? null}
             seed={entry.actor?.id ?? 'system'}
-            className="h-6 w-6"
+            className="h-6 w-6 rounded-sm ring-2 ring-surface-1"
           />
-          <div className="min-w-0 text-sm">
-            <p className="truncate">
+          <div className="min-w-0 pt-0.5 text-sm">
+            <p className="truncate leading-snug">
               <span className="font-medium">{entry.actor?.name ?? 'System'}</span>{' '}
               <span className="text-muted-foreground">{describe(entry)}</span>
             </p>
-            <p className="text-xs text-muted-foreground">{formatRelative(entry.createdAt)}</p>
+            <p className="ff-num mt-1 text-[10px] uppercase tracking-wide text-muted-foreground">
+              {formatRelative(entry.createdAt)}
+            </p>
           </div>
         </li>
       ))}

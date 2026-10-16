@@ -27,7 +27,13 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { EmptyState, LoadingScreen } from '@/components/ui/feedback'
 import { Input } from '@/components/ui/input'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Avatar, AvatarGroup } from '@/components/ui/avatar'
 import { canWrite, useWorkspace } from '@/hooks/useWorkspace'
@@ -109,21 +115,24 @@ export function TaskDetailPage(): ReactElement {
     <div className="mx-auto max-w-5xl">
       <Link
         to={`/app/${workspace.slug}/projects/${task.projectId}`}
-        className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground"
+        className="ff-label inline-flex items-center gap-1.5 text-muted-foreground transition-colors duration-150 hover:text-foreground"
       >
         <ArrowLeft className="h-3.5 w-3.5" />
         {task.projectName || 'Back to board'} · {task.projectKey}
       </Link>
 
-      <div className="mt-3 flex flex-wrap items-start justify-between gap-3">
+      <div className="mt-4 flex flex-wrap items-start justify-between gap-4">
         <div className="min-w-0">
-          <div className="flex items-center gap-2">
-            <span className="font-mono text-xs text-muted-foreground">{task.key}</span>
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="ff-num text-[11px] uppercase text-muted-foreground">{task.key}</span>
+            <span aria-hidden className="h-3 w-px bg-border-strong" />
             <StatusBadge status={task.status} />
             <PriorityBadge priority={task.priority} />
           </div>
-          <h1 className="mt-2 text-2xl font-semibold leading-tight tracking-tight">{task.title}</h1>
-          <p className="mt-1 text-xs text-muted-foreground">
+          <h1 className="mt-3 text-2xl font-semibold leading-tight tracking-[-0.02em]">
+            {task.title}
+          </h1>
+          <p className="ff-num mt-2 text-[10px] uppercase text-muted-foreground">
             Reported by {task.reporter?.name ?? 'Unknown'} · created {formatDate(task.createdAt)}
             {task.completedAt ? ` · completed ${formatDate(task.completedAt)}` : ''}
           </p>
@@ -135,13 +144,13 @@ export function TaskDetailPage(): ReactElement {
         ) : null}
       </div>
 
-      <div className="mt-6 grid gap-6 lg:grid-cols-[1fr_260px]">
+      <div className="mt-6 grid gap-5 lg:grid-cols-[1fr_272px]">
         {/* Main column */}
-        <div className="min-w-0 space-y-6">
+        <div className="min-w-0 space-y-5">
           <Card>
             <CardContent className="pt-5">
-              <h2 className="text-sm font-semibold">Description</h2>
-              <p className="mt-2 whitespace-pre-wrap text-sm text-muted-foreground">
+              <h2 className="ff-label text-muted-foreground">Description</h2>
+              <p className="mt-3 whitespace-pre-wrap text-sm leading-relaxed">
                 {task.description || 'No description yet.'}
               </p>
             </CardContent>
@@ -181,7 +190,7 @@ export function TaskDetailPage(): ReactElement {
           <Card>
             <CardContent className="space-y-4 pt-5">
               <div className="space-y-1.5">
-                <p className="text-xs font-medium text-muted-foreground">Status</p>
+                <p className="ff-label text-muted-foreground">Status</p>
                 {writable ? (
                   <Select
                     value={task.status}
@@ -204,7 +213,7 @@ export function TaskDetailPage(): ReactElement {
               </div>
 
               <div className="space-y-1.5">
-                <p className="text-xs font-medium text-muted-foreground">Priority</p>
+                <p className="ff-label text-muted-foreground">Priority</p>
                 {writable ? (
                   <Select
                     value={task.priority}
@@ -227,7 +236,7 @@ export function TaskDetailPage(): ReactElement {
               </div>
 
               <div className="space-y-1.5">
-                <p className="text-xs font-medium text-muted-foreground">Assignees</p>
+                <p className="ff-label text-muted-foreground">Assignees</p>
                 <div className="flex items-center gap-2">
                   <AvatarGroup people={task.assignees} max={3} />
                   {writable ? (
@@ -251,7 +260,12 @@ export function TaskDetailPage(): ReactElement {
                               patch.mutate({ assigneeIds: next })
                             }}
                           >
-                            <Avatar name={member.name} src={member.avatarUrl} seed={member.userId} className="h-5 w-5" />
+                            <Avatar
+                              name={member.name}
+                              src={member.avatarUrl}
+                              seed={member.userId}
+                              className="h-5 w-5"
+                            />
                             <span className="truncate">{member.name}</span>
                           </DropdownMenuCheckboxItem>
                         ))}
@@ -262,7 +276,7 @@ export function TaskDetailPage(): ReactElement {
               </div>
 
               <div className="space-y-1.5">
-                <p className="text-xs font-medium text-muted-foreground">Due date</p>
+                <p className="ff-label text-muted-foreground">Due date</p>
                 {writable ? (
                   <Input
                     type="date"
@@ -282,20 +296,23 @@ export function TaskDetailPage(): ReactElement {
               </div>
 
               <div className="space-y-1.5">
-                <p className="flex items-center gap-1 text-xs font-medium text-muted-foreground">
+                <p className="ff-label flex items-center gap-1.5 text-muted-foreground">
                   <Tag className="h-3 w-3" /> Labels
                 </p>
                 <div className="flex flex-wrap gap-1">
                   {labels.map((label) => (
                     <span
                       key={label}
-                      className="inline-flex items-center gap-1 rounded-full bg-accent px-2 py-0.5 text-[11px] font-medium text-accent-foreground"
+                      className="inline-flex items-center gap-1 rounded-sm border border-border bg-surface-2 px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground"
                     >
                       {label}
                       {writable ? (
                         <button
                           aria-label={`Remove label ${label}`}
-                          onClick={() => patch.mutate({ labels: labels.filter((entry) => entry !== label) })}
+                          className="transition-colors duration-150 hover:text-destructive"
+                          onClick={() =>
+                            patch.mutate({ labels: labels.filter((entry) => entry !== label) })
+                          }
                         >
                           <X className="h-3 w-3" />
                         </button>
@@ -324,8 +341,8 @@ export function TaskDetailPage(): ReactElement {
             </CardContent>
           </Card>
 
-          <p className="px-1 text-[11px] text-muted-foreground">
-            Version {task.version} · updated {formatDate(task.updatedAt)}
+          <p className="ff-num px-1 text-[10px] uppercase text-muted-foreground">
+            v{task.version} · updated {formatDate(task.updatedAt)}
           </p>
         </aside>
       </div>

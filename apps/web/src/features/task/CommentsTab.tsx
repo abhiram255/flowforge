@@ -40,7 +40,8 @@ export function CommentsTab({ taskId }: { taskId: string }): ReactElement {
       setDraft('')
       invalidate()
     },
-    onError: (error) => toast.error(error instanceof ApiError ? error.message : 'Could not post the comment'),
+    onError: (error) =>
+      toast.error(error instanceof ApiError ? error.message : 'Could not post the comment'),
   })
 
   const update = useMutation({
@@ -50,13 +51,15 @@ export function CommentsTab({ taskId }: { taskId: string }): ReactElement {
       setEditingId(null)
       invalidate()
     },
-    onError: (error) => toast.error(error instanceof ApiError ? error.message : 'Could not edit the comment'),
+    onError: (error) =>
+      toast.error(error instanceof ApiError ? error.message : 'Could not edit the comment'),
   })
 
   const remove = useMutation({
     mutationFn: (id: string) => api.del(`/comments/${id}`),
     onSuccess: invalidate,
-    onError: (error) => toast.error(error instanceof ApiError ? error.message : 'Could not delete the comment'),
+    onError: (error) =>
+      toast.error(error instanceof ApiError ? error.message : 'Could not delete the comment'),
   })
 
   const comments = (query.data?.pages ?? []).flatMap((page) => page.data)
@@ -98,9 +101,11 @@ export function CommentsTab({ taskId }: { taskId: string }): ReactElement {
                 className="h-7 w-7"
               />
               <div className="min-w-0 flex-1">
-                <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                  <span className="font-medium text-foreground">{comment.author?.name ?? 'Unknown'}</span>
-                  <span>{formatRelative(comment.createdAt)}</span>
+                <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
+                  <span className="font-medium text-foreground">
+                    {comment.author?.name ?? 'Unknown'}
+                  </span>
+                  <span className="ff-num">{formatRelative(comment.createdAt)}</span>
                   {comment.editedAt ? <span>· edited</span> : null}
                 </div>
 
@@ -115,7 +120,9 @@ export function CommentsTab({ taskId }: { taskId: string }): ReactElement {
                       <Button
                         size="sm"
                         disabled={update.isPending}
-                        onClick={() => update.mutate({ id: comment.id, content: editingText.trim() })}
+                        onClick={() =>
+                          update.mutate({ id: comment.id, content: editingText.trim() })
+                        }
                       >
                         Save
                       </Button>
@@ -125,13 +132,15 @@ export function CommentsTab({ taskId }: { taskId: string }): ReactElement {
                     </div>
                   </div>
                 ) : (
-                  <p className={cn('mt-1 whitespace-pre-wrap text-sm')}>{comment.content}</p>
+                  <p className={cn('mt-1.5 whitespace-pre-wrap text-sm leading-relaxed')}>
+                    {comment.content}
+                  </p>
                 )}
 
                 {isAuthor && editingId !== comment.id ? (
-                  <div className="mt-1 flex gap-3 text-xs text-muted-foreground">
+                  <div className="mt-1.5 flex gap-4 text-[11px] text-muted-foreground">
                     <button
-                      className="hover:text-foreground"
+                      className="transition-colors duration-150 hover:text-foreground"
                       onClick={() => {
                         setEditingId(comment.id)
                         setEditingText(comment.content)
@@ -140,7 +149,10 @@ export function CommentsTab({ taskId }: { taskId: string }): ReactElement {
                       <Pencil className="mr-1 inline h-3 w-3" />
                       Edit
                     </button>
-                    <button className="hover:text-destructive" onClick={() => remove.mutate(comment.id)}>
+                    <button
+                      className="transition-colors duration-150 hover:text-destructive"
+                      onClick={() => remove.mutate(comment.id)}
+                    >
                       <Trash2 className="mr-1 inline h-3 w-3" />
                       Delete
                     </button>

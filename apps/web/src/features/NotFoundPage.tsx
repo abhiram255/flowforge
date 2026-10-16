@@ -11,13 +11,16 @@ export function NotFoundPage({
   message?: string
 }): ReactElement {
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center gap-4 px-6 text-center">
-      <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-muted text-muted-foreground">
+    <div className="flex min-h-screen flex-col items-center justify-center gap-5 px-6 text-center">
+      <div className="ff-panel ff-brackets flex h-14 w-14 items-center justify-center rounded-lg text-muted-foreground">
         <Compass className="h-6 w-6" />
       </div>
       <div>
-        <h1 className="text-xl font-semibold">{title}</h1>
-        <p className="mt-1 max-w-sm text-sm text-muted-foreground">{message}</p>
+        <p className="ff-label text-muted-foreground">Error 404</p>
+        <h1 className="mt-2.5 text-xl font-semibold tracking-[-0.02em]">{title}</h1>
+        <p className="mx-auto mt-2 max-w-sm text-sm leading-relaxed text-muted-foreground">
+          {message}
+        </p>
       </div>
       <Button asChild variant="outline">
         <Link to="/app">Back to dashboard</Link>

@@ -1,13 +1,7 @@
 import { useQuery } from '@tanstack/react-query'
 import { Loader2 } from 'lucide-react'
 import { lazy, Suspense, type ReactElement } from 'react'
-import {
-  createBrowserRouter,
-  Navigate,
-  Outlet,
-  useLocation,
-  useParams,
-} from 'react-router-dom'
+import { createBrowserRouter, Navigate, Outlet, useLocation, useParams } from 'react-router-dom'
 import type { Paginated, WorkspaceDTO } from '@flowforge/shared'
 import api from './lib/api'
 import { qk } from './lib/query'
@@ -22,10 +16,14 @@ import { NotFoundPage } from './features/NotFoundPage'
 // Route-level code splitting: each workspace view loads on first visit, so the
 // initial bundle stays small (recharts only ships with the analytics page).
 const OnboardingPage = lazy(() =>
-  import('./features/onboarding/OnboardingPage').then((module) => ({ default: module.OnboardingPage })),
+  import('./features/onboarding/OnboardingPage').then((module) => ({
+    default: module.OnboardingPage,
+  })),
 )
 const DashboardPage = lazy(() =>
-  import('./features/dashboard/DashboardPage').then((module) => ({ default: module.DashboardPage })),
+  import('./features/dashboard/DashboardPage').then((module) => ({
+    default: module.DashboardPage,
+  })),
 )
 const ProjectsPage = lazy(() =>
   import('./features/projects/ProjectsPage').then((module) => ({ default: module.ProjectsPage })),
@@ -40,7 +38,9 @@ const TeamPage = lazy(() =>
   import('./features/team/TeamPage').then((module) => ({ default: module.TeamPage })),
 )
 const AnalyticsPage = lazy(() =>
-  import('./features/analytics/AnalyticsPage').then((module) => ({ default: module.AnalyticsPage })),
+  import('./features/analytics/AnalyticsPage').then((module) => ({
+    default: module.AnalyticsPage,
+  })),
 )
 const SettingsPage = lazy(() =>
   import('./features/settings/SettingsPage').then((module) => ({ default: module.SettingsPage })),
@@ -48,8 +48,9 @@ const SettingsPage = lazy(() =>
 
 function FullPageSplash(): ReactElement {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background">
-      <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+    <div className="flex min-h-screen flex-col items-center justify-center gap-3">
+      <Loader2 className="h-5 w-5 animate-spin text-primary" />
+      <p className="ff-label text-muted-foreground">Initialising</p>
     </div>
   )
 }
@@ -60,7 +61,12 @@ function RequireAuth({ children }: { children: ReactElement }): ReactElement {
 
   if (status === 'loading') return <FullPageSplash />
   if (status === 'anonymous') {
-    return <Navigate to={`/login?next=${encodeURIComponent(location.pathname + location.search)}`} replace />
+    return (
+      <Navigate
+        to={`/login?next=${encodeURIComponent(location.pathname + location.search)}`}
+        replace
+      />
+    )
   }
   return children
 }

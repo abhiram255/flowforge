@@ -43,7 +43,8 @@ export function SubtasksTab({
       setTitle('')
       invalidate()
     },
-    onError: (error) => toast.error(error instanceof ApiError ? error.message : 'Could not add the subtask'),
+    onError: (error) =>
+      toast.error(error instanceof ApiError ? error.message : 'Could not add the subtask'),
   })
 
   const toggle = useMutation({
@@ -71,25 +72,25 @@ export function SubtasksTab({
   return (
     <div className="space-y-4">
       {subtasks.length > 0 ? (
-        <p className="text-xs text-muted-foreground">
+        <p className="ff-label text-muted-foreground">
           {done}/{subtasks.length} complete
         </p>
       ) : null}
 
-      <div className="space-y-1">
+      <div className="space-y-0.5">
         {subtasks.map((subtask) => (
           <div
             key={subtask.id}
-            className="flex items-center gap-3 rounded-lg px-2 py-2 hover:bg-muted/60"
+            className="flex items-center gap-3 rounded-md px-2 py-2 transition-colors duration-150 hover:bg-surface-2"
           >
             <button
               disabled={!writable || toggle.isPending}
               onClick={() => toggle.mutate(subtask)}
               aria-label={subtask.status === 'done' ? 'Mark as not done' : 'Mark as done'}
-              className="text-muted-foreground hover:text-foreground disabled:opacity-50"
+              className="text-muted-foreground transition-colors duration-150 hover:text-foreground disabled:opacity-50"
             >
               {subtask.status === 'done' ? (
-                <CheckCircle2 className="h-4 w-4 text-emerald-500" />
+                <CheckCircle2 className="h-4 w-4 text-success" />
               ) : (
                 <Circle className="h-4 w-4" />
               )}
@@ -103,7 +104,9 @@ export function SubtasksTab({
             >
               {subtask.title}
             </Link>
-            <span className="font-mono text-[11px] text-muted-foreground">{subtask.key}</span>
+            <span className="ff-num text-[10px] uppercase text-muted-foreground">
+              {subtask.key}
+            </span>
           </div>
         ))}
       </div>

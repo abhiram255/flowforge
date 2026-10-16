@@ -36,7 +36,8 @@ export function AttachmentsTab({
       toast.success('File removed')
       invalidate()
     },
-    onError: (error) => toast.error(error instanceof ApiError ? error.message : 'Could not remove the file'),
+    onError: (error) =>
+      toast.error(error instanceof ApiError ? error.message : 'Could not remove the file'),
   })
 
   async function onFileChosen(file: File | undefined): Promise<void> {
@@ -98,41 +99,41 @@ export function AttachmentsTab({
 
       {query.isLoading ? <Spinner /> : null}
 
-      <div className="space-y-1">
+      <div className="space-y-1.5">
         {attachments.map((attachment) => (
-            <div
-              key={attachment.id}
-              className="flex items-center gap-3 rounded-lg border border-border px-3 py-2"
+          <div
+            key={attachment.id}
+            className="flex items-center gap-3 rounded-md border border-border bg-surface-2/40 px-3 py-2.5 transition-colors duration-150 hover:border-border-strong"
+          >
+            <FileText className="h-4 w-4 shrink-0 text-muted-foreground" />
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-sm font-medium tracking-tight">{attachment.filename}</p>
+              <p className="ff-num mt-0.5 truncate text-[10px] uppercase text-muted-foreground">
+                {formatBytes(attachment.size)} · {attachment.uploader?.name ?? 'Unknown'} ·{' '}
+                {formatRelative(attachment.createdAt)}
+              </p>
+            </div>
+            <Button
+              variant="ghost"
+              size="icon"
+              aria-label={`Download ${attachment.filename}`}
+              onClick={() => void onDownload(attachment)}
             >
-              <FileText className="h-4 w-4 shrink-0 text-muted-foreground" />
-              <div className="min-w-0 flex-1">
-                <p className="truncate text-sm font-medium">{attachment.filename}</p>
-                <p className="text-xs text-muted-foreground">
-                  {formatBytes(attachment.size)} · {attachment.uploader?.name ?? 'Unknown'} ·{' '}
-                  {formatRelative(attachment.createdAt)}
-                </p>
-              </div>
+              <Download />
+            </Button>
+            {writable ? (
               <Button
                 variant="ghost"
                 size="icon"
-                aria-label={`Download ${attachment.filename}`}
-                onClick={() => void onDownload(attachment)}
+                aria-label={`Delete ${attachment.filename}`}
+                className="text-muted-foreground hover:text-destructive"
+                onClick={() => remove.mutate(attachment.id)}
               >
-                <Download />
+                <Trash2 />
               </Button>
-              {writable ? (
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  aria-label={`Delete ${attachment.filename}`}
-                  className="text-muted-foreground hover:text-destructive"
-                  onClick={() => remove.mutate(attachment.id)}
-                >
-                  <Trash2 />
-                </Button>
-              ) : null}
-            </div>
-          ))}
+            ) : null}
+          </div>
+        ))}
       </div>
 
       {!query.isLoading && attachments.length === 0 ? (

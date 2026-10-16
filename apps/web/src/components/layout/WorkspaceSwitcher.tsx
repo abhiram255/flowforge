@@ -25,13 +25,17 @@ export function WorkspaceSwitcher({ workspace }: { workspace: WorkspaceDTO }): R
 
   return (
     <DropdownMenu>
-      <DropdownMenuTrigger className="flex min-w-0 flex-1 items-center gap-2 rounded-lg px-2 py-1.5 text-left hover:bg-muted">
-        <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-primary text-xs font-bold text-primary-foreground">
+      <DropdownMenuTrigger className="flex min-w-0 flex-1 items-center gap-2.5 rounded-md px-2 py-1.5 text-left transition-colors duration-150 hover:bg-surface-2">
+        <span className="ff-notch flex h-7 w-7 shrink-0 items-center justify-center bg-primary font-mono text-xs font-bold text-primary-foreground">
           {workspace.name.slice(0, 1).toUpperCase()}
         </span>
         <span className="min-w-0 flex-1">
-          <span className="block truncate text-sm font-semibold leading-tight">{workspace.name}</span>
-          <span className="block truncate text-xs text-muted-foreground">{workspace.slug}</span>
+          <span className="block truncate text-sm font-semibold leading-tight tracking-tight">
+            {workspace.name}
+          </span>
+          <span className="ff-num block truncate text-[10px] text-muted-foreground">
+            /{workspace.slug}
+          </span>
         </span>
         <ChevronsUpDown className="h-4 w-4 shrink-0 text-muted-foreground" />
       </DropdownMenuTrigger>
@@ -46,7 +50,9 @@ export function WorkspaceSwitcher({ workspace }: { workspace: WorkspaceDTO }): R
           >
             <span className="min-w-0 flex-1 truncate">
               {entry.name}
-              <span className="ml-2 text-xs text-muted-foreground">{entry.memberCount}</span>
+              <span className="ff-num ml-2 text-[10px] text-muted-foreground">
+                {entry.memberCount}
+              </span>
             </span>
             {entry.id === workspace.id ? <Check className="h-4 w-4 text-primary" /> : null}
           </DropdownMenuItem>

@@ -1,11 +1,19 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Archive, ArchiveRestore, FolderKanban, MoreHorizontal, Pencil, Plus, Trash2 } from 'lucide-react'
+import {
+  Archive,
+  ArchiveRestore,
+  FolderKanban,
+  MoreHorizontal,
+  Pencil,
+  Plus,
+  Trash2,
+} from 'lucide-react'
 import { useState, type ReactElement } from 'react'
 import { Link } from 'react-router-dom'
 import { TASK_STATUS_LABELS, TASK_STATUSES, type ProjectDTO } from '@flowforge/shared'
 import api, { ApiError } from '@/lib/api'
 import { qk } from '@/lib/query'
-import { formatRelative } from '@/lib/utils'
+import { cn, formatRelative } from '@/lib/utils'
 import { PageHeader } from '@/components/common/PageHeader'
 import { ConfirmDialog } from '@/components/common/ConfirmDialog'
 import { Button } from '@/components/ui/button'
@@ -30,21 +38,24 @@ function ProgressBar({ project }: { project: ProjectDTO }): ReactElement {
 
   return (
     <div>
-      <div className="flex items-center justify-between text-xs text-muted-foreground">
-        <span>
+      <div className="flex items-baseline justify-between gap-2">
+        <span className="ff-label text-muted-foreground">
           {done}/{total} done
         </span>
-        <span>{percent}%</span>
+        <span className="ff-num text-xs font-medium">{percent}%</span>
       </div>
-      <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-muted">
-        <div className="h-full rounded-full bg-primary transition-all" style={{ width: `${percent}%` }} />
+      <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-surface-3">
+        <div
+          className="h-full rounded-full bg-primary transition-[width] duration-500 ease-expo"
+          style={{ width: `${percent}%` }}
+        />
       </div>
       {counts ? (
-        <div className="mt-3 flex flex-wrap gap-1.5">
+        <div className="mt-3.5 flex flex-wrap gap-1.5">
           {TASK_STATUSES.filter((status) => counts[status] > 0).map((status) => (
             <span
               key={status}
-              className="rounded-full bg-muted px-2 py-0.5 text-[11px] text-muted-foreground"
+              className="ff-label rounded-sm border border-border bg-surface-2 px-1.5 py-1 text-muted-foreground"
             >
               {TASK_STATUS_LABELS[status]} · {counts[status]}
             </span>
@@ -91,11 +102,14 @@ export function ProjectsPage(): ReactElement {
       toast.error(error instanceof ApiError ? error.message : 'Could not delete the project'),
   })
 
+  const projects = data?.data ?? []
+
   return (
     <div>
       <PageHeader
+        eyebrow="Workspace"
         title="Projects"
-        description="Every project is a Kanban board with its own task key."
+        description="Each project is a Kanban board with its own task key."
         actions={
           <>
             <Button variant="outline" size="sm" onClick={() => setIncludeArchived((v) => !v)}>
@@ -117,7 +131,7 @@ export function ProjectsPage(): ReactElement {
 
       {isLoading ? (
         <LoadingScreen label="Loading projects…" />
-      ) : (data?.data.length ?? 0) === 0 ? (
+      ) : projects.length === 0 ? (
         <EmptyState
           icon={<FolderKanban className="h-6 w-6" />}
           title="No projects yet"
@@ -132,30 +146,34 @@ export function ProjectsPage(): ReactElement {
           }
         />
       ) : (
-        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-          {(data?.data ?? []).map((project) => (
-            <Card key={project.id} className="flex flex-col">
+        <div className="ff-stagger grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+          {projects.map((project) => (
+            <Card
+              key={project.id}
+              className={cn(
+                'ff-panel-hover flex flex-col',
+                project.status === 'archived' && 'opacity-70',
+              )}
+            >
               <CardContent className="flex flex-1 flex-col gap-4 p-5">
                 <div className="flex items-start justify-between gap-2">
                   <div className="min-w-0">
                     <div className="flex items-center gap-2">
-                      <span className="rounded bg-primary/15 px-1.5 py-0.5 font-mono text-[11px] font-semibold text-primary">
+                      <span className="ff-num rounded-sm border border-primary/35 bg-primary-soft px-1.5 py-0.5 text-[10px] font-semibold uppercase text-primary">
                         {project.key}
                       </span>
                       {project.status === 'archived' ? (
-                        <span className="rounded-full bg-muted px-2 py-0.5 text-[11px] text-muted-foreground">
-                          Archived
-                        </span>
+                        <span className="ff-label text-muted-foreground">Archived</span>
                       ) : null}
                     </div>
                     <Link
                       to={`/app/${workspace.slug}/projects/${project.id}`}
-                      className="mt-2 block truncate text-sm font-semibold hover:underline"
+                      className="mt-2.5 block truncate text-sm font-semibold tracking-tight transition-colors duration-150 hover:text-primary"
                     >
                       {project.name}
                     </Link>
                     {project.description ? (
-                      <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">
+                      <p className="mt-1 line-clamp-2 text-xs leading-relaxed text-muted-foreground">
                         {project.description}
                       </p>
                     ) : null}
@@ -210,7 +228,7 @@ export function ProjectsPage(): ReactElement {
 
                 <div className="mt-auto">
                   <ProgressBar project={project} />
-                  <p className="mt-3 text-[11px] text-muted-foreground">
+                  <p className="ff-num mt-3 text-[10px] uppercase text-muted-foreground">
                     Updated {formatRelative(project.updatedAt)}
                   </p>
                 </div>
