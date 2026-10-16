@@ -33,7 +33,7 @@ npm install --include=dev
 # 2) Environment: the committed defaults target localhost MongoDB
 cp .env.example .env       # Windows: copy .env.example .env
 
-# 3) Load the demo dataset (users, 2 workspaces, 4 projects, ~200 tasks)
+# 3) Load the demo dataset (8 users, 2 workspaces, 4 projects, 56 tasks)
 npm run seed
 
 # 4) Start API (:4000) and web (:5173) together
@@ -177,6 +177,9 @@ npm run bench                # MongoDB indexed vs unindexed benchmark → docs/b
 npm run load                 # autocannon scenarios → docs/load-smoke-results.json
 npx playwright install chromium
 npm run e2e                  # Playwright boots a seeded API + web and walks auth & board journeys
+                             # stop `npm run dev` first: Playwright reuses anything already on :4000,
+                             # including its database, so you would run against flowforge_dev
+                             # instead of the disposable flowforge_e2e
 
 # Redis-enabled cache/queue path: docker compose up -d mongo redis api
 curl http://localhost:4000/api/v1/health   # → { db: connected, cache: redis, queues: redis, ... }

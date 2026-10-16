@@ -33,6 +33,12 @@ npm run e2e        # Playwright; boots a seeded API (flowforge_e2e) + Vite
 MongoDB databases: `flowforge_dev` (dev/seed), `flowforge_test` (integration tests), `flowforge_e2e`
 (Playwright), `flowforge_bench` / `flowforge_load` (benchmarks, dropped afterwards).
 
+`npm run e2e` reuses a server that is already listening on `http://localhost:4000`
+(`reuseExistingServer: !CI` in `apps/web/playwright.config.ts`) — including its database. Run it with
+`npm run dev` stopped, otherwise the suite seeds and writes to `flowforge_dev` instead of
+`flowforge_e2e`. Observed directly: an e2e run left an `e2e-workspace`, an `@flowforge.test` user and
+a task inside `flowforge_dev`.
+
 ## Conventions
 
 - **Contract-first**: every request shape and response DTO lives in `packages/shared` (zod schemas +

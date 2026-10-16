@@ -148,6 +148,7 @@ requests through a rolling restart. Methodology, raw artifacts and per-scenario 
 
 ## Documentation map
 
+- **[docs/PROJECT_GUIDE.md](./docs/PROJECT_GUIDE.md)** — the complete guide: every feature with screenshots, the design system, architecture, verification and limitations.
 - **[HOW_TO_RUN.md](./HOW_TO_RUN.md)** — setup, demo accounts, and how to exercise every feature.
 - **[DECISIONS.md](./DECISIONS.md)** — environment facts, conventions, and the decisions behind the code.
 - **[docs/ARCHITECTURE.md](./docs/ARCHITECTURE.md)** — modules, data model, request lifecycle, realtime design, security model.
