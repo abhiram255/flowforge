@@ -94,7 +94,7 @@ Notable constraints and indexes (see `apps/api/src/models/`):
 | --- | --- |
 | `membership { workspaceId, userId } unique` | one membership per user per workspace |
 | `workspace.slug unique`, `project { workspaceId, key } unique` | readable, tenant-scoped identifiers |
-| `task { workspaceId, projectId, status, position }` | board reads (measured 16.9× p95 win) |
+| `task { workspaceId, projectId, status, position }` | board reads (measured 10× p95 win, 500× fewer documents examined — `docs/benchmark-results.json`) |
 | `task { workspaceId, assigneeIds, status, dueDate }` | "my tasks", workload, overdue |
 | `task { workspaceId, parentTaskId }`, `{ workspaceId, createdAt, _id }`, text `{title, description}` | subtasks, cursor feeds, search |
 | `activity { workspaceId, createdAt, _id }`, `{ workspaceId, taskId, createdAt }` | feeds |
