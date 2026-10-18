@@ -14,7 +14,12 @@ export interface StorageDriver {
    * buffers). `contentLength` lets the S3 driver stream a single PUT instead
    * of buffering to discover the size.
    */
-  putStream(key: string, stream: Readable, contentType: string, contentLength?: number): Promise<void>
+  putStream(
+    key: string,
+    stream: Readable,
+    contentType: string,
+    contentLength?: number,
+  ): Promise<void>
   getStream(key: string): Promise<Readable>
   delete(key: string): Promise<void>
 }
@@ -123,7 +128,9 @@ class S3Driver implements StorageDriver {
   async getStream(key: string): Promise<Readable> {
     assertSafeKey(key)
     const { client, commands } = await this.getClient()
-    const result = await client.send(new commands.GetObjectCommand({ Bucket: this.bucket, Key: key }))
+    const result = await client.send(
+      new commands.GetObjectCommand({ Bucket: this.bucket, Key: key }),
+    )
     return result.Body as Readable
   }
 
@@ -156,7 +163,8 @@ let driver: StorageDriver | null = null
 
 export function getStorageDriver(): StorageDriver {
   if (!driver) {
-    driver = env.STORAGE_DRIVER === 's3' ? new S3Driver() : new LocalDiskDriver(env.localStorageDirAbs)
+    driver =
+      env.STORAGE_DRIVER === 's3' ? new S3Driver() : new LocalDiskDriver(env.localStorageDirAbs)
     logger.info({ driver: driver.kind }, 'storage driver initialised')
   }
   return driver

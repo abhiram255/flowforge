@@ -124,10 +124,7 @@ export async function getAttachmentOrThrow(attachmentId: string): Promise<Attach
   return attachment
 }
 
-export async function deleteAttachment(
-  ctx: WorkspaceContext,
-  attachmentId: string,
-): Promise<void> {
+export async function deleteAttachment(ctx: WorkspaceContext, attachmentId: string): Promise<void> {
   const attachment = await Attachment.findOne({
     _id: attachmentId,
     workspaceId: ctx.workspace._id,

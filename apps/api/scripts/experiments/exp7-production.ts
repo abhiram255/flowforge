@@ -60,7 +60,11 @@ async function scaleAndSettle(files: string[], scale: number): Promise<string[]>
   return names
 }
 
-const cpuPercent = (before: ReplicaSnapshot[], after: ReplicaSnapshot[], wallMs: number): number => {
+const cpuPercent = (
+  before: ReplicaSnapshot[],
+  after: ReplicaSnapshot[],
+  wallMs: number,
+): number => {
   const delta = sumBy(after, (s) => s.cpuSeconds) - sumBy(before, (s) => s.cpuSeconds)
   return Math.round((delta / (wallMs / 1000)) * 1000) / 10
 }
@@ -113,10 +117,7 @@ async function measureScale(
 // B. Rolling restart under load
 // ---------------------------------------------------------------------------
 
-async function rollingRestart(
-  token: string,
-  projectId: string,
-): Promise<Record<string, unknown>> {
+async function rollingRestart(token: string, projectId: string): Promise<Record<string, unknown>> {
   const names = await scaleAndSettle(PROD_COMPOSE, 3)
   const target = names[names.length - 1] as string
   const loadPromise = runDetailed(
@@ -278,7 +279,8 @@ async function coldKeyProducers(
       return acc
     }, {}),
     // One producer per replica is the documented per-process single-flight bound.
-    producerRunsAcrossReplicas: sumBy(after, (s) => s.cacheMisses) - sumBy(before, (s) => s.cacheMisses),
+    producerRunsAcrossReplicas:
+      sumBy(after, (s) => s.cacheMisses) - sumBy(before, (s) => s.cacheMisses),
     coalescedAcrossReplicas:
       sumBy(after, (s) => s.cacheCoalesced) - sumBy(before, (s) => s.cacheCoalesced),
     perReplicaMissDelta: after.map((entry, index) => ({
@@ -310,8 +312,7 @@ async function negativeCacheArm(
     label,
     scenario: load,
     responses404: load.statusCodeStats['404'] ?? 0,
-    cacheMissesDelta:
-      sumBy(after, (s) => s.cacheMisses) - sumBy(before, (s) => s.cacheMisses),
+    cacheMissesDelta: sumBy(after, (s) => s.cacheMisses) - sumBy(before, (s) => s.cacheMisses),
   }
 }
 
@@ -346,7 +347,10 @@ async function uploadMemory(token: string, taskId: string): Promise<Record<strin
       replica: entry.name,
       beforeMb: rssMb(before[index]?.rssBytes ?? null),
       afterMb: rssMb(entry.rssBytes),
-      deltaMb: Math.round(((rssMb(entry.rssBytes) ?? 0) - (rssMb(before[index]?.rssBytes ?? null) ?? 0)) * 10) / 10,
+      deltaMb:
+        Math.round(
+          ((rssMb(entry.rssBytes) ?? 0) - (rssMb(before[index]?.rssBytes ?? null) ?? 0)) * 10,
+        ) / 10,
     })),
     restartCountsAfter: after.map((entry) => ({ name: entry.name, restarts: entry.restartCount })),
   }
@@ -389,13 +393,19 @@ async function main(): Promise<void> {
   const uploads = await uploadMemory(token, ctx.taskId)
 
   logger.warn('exp7/E2: negative-cache A/B (cache on vs CACHE_DISABLED)')
-  const negativeCacheOn = await negativeCacheArm('cache on (negative caching active)', PROD_COMPOSE, token)
+  const negativeCacheOn = await negativeCacheArm(
+    'cache on (negative caching active)',
+    PROD_COMPOSE,
+    token,
+  )
   const negativeCacheOff = await negativeCacheArm('CACHE_DISABLED=true', EXP_DEV_COMPOSE, token)
 
   logger.warn('exp7: restoring the production topology (3 replicas)')
   await restoreProdTopology(3)
 
-  const dockerVersion = (await run('docker', ['version', '--format', '{{.Server.Version}}'])).stdout.trim()
+  const dockerVersion = (
+    await run('docker', ['version', '--format', '{{.Server.Version}}'])
+  ).stdout.trim()
   const artifact = {
     experiment: 'exp7-production-topology',
     generatedAt: new Date().toISOString(),

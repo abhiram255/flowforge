@@ -267,15 +267,13 @@ async function main(): Promise<void> {
       redisUrl: REDIS_URL,
     })
     await sleep(1200)
-    const countersBeforeB = balancer
-      .snapshot()
-      .reduce(
-        (sum, entry) => ({
-          retries: sum.retries + entry.retries,
-          errors: sum.errors + entry.errors,
-        }),
-        { retries: 0, errors: 0 },
-      )
+    const countersBeforeB = balancer.snapshot().reduce(
+      (sum, entry) => ({
+        retries: sum.retries + entry.retries,
+        errors: sum.errors + entry.errors,
+      }),
+      { retries: 0, errors: 0 },
+    )
     const loadB = spawnLoad(loadUrl, demo.token, 30, 15)
     const loadStartB = loadB.startedAt
     await sleep(6000)
@@ -283,15 +281,13 @@ async function main(): Promise<void> {
     const crashExit = await instanceA.kill()
     const resultB = await loadB.done
     const loadEndB = Date.now()
-    const countersAfterB = balancer
-      .snapshot()
-      .reduce(
-        (sum, entry) => ({
-          retries: sum.retries + entry.retries,
-          errors: sum.errors + entry.errors,
-        }),
-        { retries: 0, errors: 0 },
-      )
+    const countersAfterB = balancer.snapshot().reduce(
+      (sum, entry) => ({
+        retries: sum.retries + entry.retries,
+        errors: sum.errors + entry.errors,
+      }),
+      { retries: 0, errors: 0 },
+    )
     const crashEject = balancer.events.find(
       (event) =>
         event.event === 'upstream-ejected' &&

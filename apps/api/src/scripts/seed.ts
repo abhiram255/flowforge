@@ -43,20 +43,40 @@ const PEOPLE: Array<{ name: string; email: string; role: Role }> = [
   { name: 'Kabir Singh', email: 'kabir.singh@flowforge.dev', role: 'admin' },
 ]
 
-const TASK_TEMPLATES: Array<{ title: string; labels: string[]; priority: (typeof TASK_PRIORITIES)[number] }> = [
+const TASK_TEMPLATES: Array<{
+  title: string
+  labels: string[]
+  priority: (typeof TASK_PRIORITIES)[number]
+}> = [
   { title: 'Set up CI pipeline for automated tests', labels: ['devops'], priority: 'high' },
   { title: 'Design onboarding empty states', labels: ['design', 'ux'], priority: 'medium' },
-  { title: 'Fix flaky authentication integration test', labels: ['bug', 'auth'], priority: 'urgent' },
+  {
+    title: 'Fix flaky authentication integration test',
+    labels: ['bug', 'auth'],
+    priority: 'urgent',
+  },
   { title: 'Add keyboard shortcuts to the board', labels: ['frontend'], priority: 'low' },
   { title: 'Audit bundle size and lazy-load routes', labels: ['performance'], priority: 'medium' },
   { title: 'Implement CSV export for analytics', labels: ['backend'], priority: 'medium' },
   { title: 'Tighten rate limiting on auth endpoints', labels: ['security'], priority: 'high' },
   { title: 'Improve empty board illustration', labels: ['design'], priority: 'low' },
-  { title: 'Add optimistic updates for drag and drop', labels: ['frontend', 'ux'], priority: 'high' },
+  {
+    title: 'Add optimistic updates for drag and drop',
+    labels: ['frontend', 'ux'],
+    priority: 'high',
+  },
   { title: 'Document workspace role matrix', labels: ['docs'], priority: 'low' },
   { title: 'Instrument p95 latency metrics', labels: ['observability'], priority: 'high' },
-  { title: 'Cache analytics aggregations in Redis', labels: ['performance', 'backend'], priority: 'medium' },
-  { title: 'Write tenant isolation regression tests', labels: ['security', 'testing'], priority: 'urgent' },
+  {
+    title: 'Cache analytics aggregations in Redis',
+    labels: ['performance', 'backend'],
+    priority: 'medium',
+  },
+  {
+    title: 'Write tenant isolation regression tests',
+    labels: ['security', 'testing'],
+    priority: 'urgent',
+  },
   { title: 'Add avatar upload with image validation', labels: ['backend'], priority: 'medium' },
   { title: 'Refine notification copy and grouping', labels: ['ux'], priority: 'low' },
   { title: 'Handle refresh token reuse detection', labels: ['auth', 'security'], priority: 'high' },
@@ -64,7 +84,11 @@ const TASK_TEMPLATES: Array<{ title: string; labels: string[]; priority: (typeof
   { title: 'Set up MongoDB index benchmarks', labels: ['performance', 'devops'], priority: 'high' },
   { title: 'Generate OpenAPI reference from routes', labels: ['docs'], priority: 'medium' },
   { title: 'Add workspace invite email template', labels: ['backend'], priority: 'low' },
-  { title: 'Fix drag ghost overflow on iOS Safari', labels: ['bug', 'frontend'], priority: 'medium' },
+  {
+    title: 'Fix drag ghost overflow on iOS Safari',
+    labels: ['bug', 'frontend'],
+    priority: 'medium',
+  },
   { title: 'Add activity feed pagination cursor', labels: ['backend'], priority: 'medium' },
   { title: 'Review contrast ratios for dark theme', labels: ['design', 'a11y'], priority: 'low' },
   { title: 'Ship weekly digest background job', labels: ['backend', 'jobs'], priority: 'low' },
@@ -109,9 +133,7 @@ export async function seedDatabase(options: SeedOptions = {}): Promise<void> {
       preferences: { theme: 'dark', emailNotifications: true, inAppNotifications: true },
     })),
   )
-  const userByEmail = new Map(
-    userDocs.map((user, index) => [PEOPLE[index]!.email, user] as const),
-  )
+  const userByEmail = new Map(userDocs.map((user, index) => [PEOPLE[index]!.email, user] as const))
   const userFor = (email: string) => {
     const user = userByEmail.get(email)
     if (!user) throw new Error(`Seed user missing: ${email}`)
@@ -162,10 +184,30 @@ export async function seedDatabase(options: SeedOptions = {}): Promise<void> {
   ])
 
   const projectSpecs = [
-    { workspace: acme, name: 'Website Redesign', key: 'WEB', description: 'Marketing site redesign and CMS migration.' },
-    { workspace: acme, name: 'Mobile App', key: 'MOB', description: 'React Native companion app for on-the-go updates.' },
-    { workspace: acme, name: 'Platform API', key: 'PLT', description: 'Public API, webhooks and integrations.' },
-    { workspace: nebula, name: 'Data Pipeline', key: 'DPL', description: 'Streaming ingestion and warehouse sync.' },
+    {
+      workspace: acme,
+      name: 'Website Redesign',
+      key: 'WEB',
+      description: 'Marketing site redesign and CMS migration.',
+    },
+    {
+      workspace: acme,
+      name: 'Mobile App',
+      key: 'MOB',
+      description: 'React Native companion app for on-the-go updates.',
+    },
+    {
+      workspace: acme,
+      name: 'Platform API',
+      key: 'PLT',
+      description: 'Public API, webhooks and integrations.',
+    },
+    {
+      workspace: nebula,
+      name: 'Data Pipeline',
+      key: 'DPL',
+      description: 'Streaming ingestion and warehouse sync.',
+    },
   ]
 
   const projects = await Project.insertMany(
@@ -199,8 +241,9 @@ export async function seedDatabase(options: SeedOptions = {}): Promise<void> {
       seq += 1
       const status = TASK_STATUSES[(i + seq) % TASK_STATUSES.length]!
       const assigneeCount = i % 3 === 0 ? 2 : 1
-      const assignees = Array.from({ length: assigneeCount }, (_, k) =>
-        memberIds[(i + k + 1) % memberIds.length]!,
+      const assignees = Array.from(
+        { length: assigneeCount },
+        (_, k) => memberIds[(i + k + 1) % memberIds.length]!,
       ).map((id) => id)
       const createdAt = new Date(now - (templateIndex % 21) * DAY_MS)
       const dueOffsetDays = (i % 15) - 5
@@ -247,7 +290,9 @@ export async function seedDatabase(options: SeedOptions = {}): Promise<void> {
   // Subtasks for the first two tasks of every project
   const subtaskDocs: Array<Record<string, unknown>> = []
   for (const project of projects) {
-    const parents = tasks.filter((task) => String(task.projectId) === String(project._id)).slice(0, 2)
+    const parents = tasks
+      .filter((task) => String(task.projectId) === String(project._id))
+      .slice(0, 2)
     parents.forEach((parent, index) => {
       subtaskDocs.push({
         workspaceId: parent.workspaceId,

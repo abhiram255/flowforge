@@ -22,6 +22,7 @@ Every claim below is enforced by code and checked by tests — not just describe
 | Server-side RBAC | Role hierarchy (`owner > admin > member > viewer`) enforced in middleware and services | `rbac.test.ts` — viewers/ members/ admins each constrained |
 | Measurable DB work | Compound indexes sized to the board query, verified with `explain` | p95 **17.6 ms → 1.8 ms**, docs examined **20,000 → 40** (`docs/BENCHMARKS.md`); at 400k documents, 88–229× p95 across the app's query shapes (`docs/SCALABILITY_EXPERIMENTS.md`) |
 | Scale-out without losing correctness | Two API instances behind a load balancer with a shared Redis rate-limit store and a Socket.IO Redis adapter | 1.46–1.59× throughput, 0 errors, 30/60 logins under one shared budget, cross-instance event in 97 ms (Experiment 4) |
+| A production-shaped deployment, measured | `docker-compose.prod.yml`: Traefik edge, `--scale api=N` replicas, separate worker tier, 3-node MongoDB replica set (rs0), shared S3-compatible attachment store, one-shot index build | 1 → 2 replicas +51 % board / +47 % dashboard at 0 errors; failover in 3.6 s with zero failed reads/writes; negative caching 635 vs 333 rps (Experiments 7–8) |
 | Real-time correctness | Socket.IO rooms are joined only after a membership check; events fire only after successful writes | `realtime.test.ts` incl. foreign-room rejection |
 | Reconnect sync | Clients refetch everything on socket reconnect and patch caches from events otherwise | `apps/web/src/hooks/useRealtime.ts` |
 
@@ -46,14 +47,15 @@ structured logs with redaction, rate limiting, and graceful degradation when Red
 flowforge/
 ├── apps/
 │   ├── api/                  # Express + Mongoose + Socket.IO (modular monolith)
-│   │   ├── src/config/       # env validation, db, redis, logging, storage driver
+│   │   ├── src/config/       # env validation, db pool, redis, logging, storage driver
 │   │   ├── src/middleware/   # auth, tenancy loaders, RBAC, validation, errors, limits
 │   │   ├── src/modules/      # auth, workspaces, projects, tasks, comments, attachments,
 │   │   │                     # activity, notifications, analytics, users
 │   │   ├── src/realtime/     # Socket.IO gateway (rooms, presence)
 │   │   ├── src/jobs/         # BullMQ queues with an inline fallback
-│   │   ├── src/tests/        # 66 integration tests against a real MongoDB
-│   │   └── scripts/          # seed, benchmark, load smoke, e2e bootstrap
+│   │   ├── src/scripts/      # seed, ensure-indexes, ensure-bucket (built into dist/scripts)
+│   │   ├── src/tests/        # 85 integration tests against a real MongoDB (1 S3-gated)
+│   │   └── scripts/          # benchmark, load smoke, scalability experiments (exp1–exp8)
 │   └── web/                  # React 19 + Vite + Tailwind v4 + TanStack Query + Zustand
 │       ├── src/features/     # auth, dashboard, projects, board, task, team, analytics, settings
 │       ├── src/components/   # design system (Radix-based) + layout shell
@@ -61,10 +63,11 @@ flowforge/
 ├── packages/
 │   ├── shared/               # zod schemas, constants, DTO contracts (API ⇄ web)
 │   └── config/               # shared TypeScript base config
-├── infra/                    # docker (nginx), monitoring (Prometheus/Grafana)
+├── infra/                    # docker (nginx), monitoring (Prometheus/Grafana), seaweedfs
 ├── load/k6/                  # k6 scenario with p95 thresholds
 ├── docs/                     # ARCHITECTURE, API, BENCHMARKS, DEMO + measured JSON artifacts
-├── docker-compose.yml        # mongo + redis + api + web
+├── docker-compose.yml        # dev stack: mongo + redis + api + web
+├── docker-compose.prod.yml   # production topology (Traefik, replicas, worker, rs0, SeaweedFS)
 └── .github/workflows/        # CI (verify + e2e + images) and CD (GHCR + SSH)
 ```
 
@@ -107,19 +110,25 @@ Open http://localhost:5173 and sign in as `aarav.mehta@flowforge.dev` / `Passwor
 
 **Prefer containers?** `docker compose up --build` → http://localhost:8080 (MongoDB + Redis included).
 
+**Production-shaped stack?** `npm run stack:up` (then `docker compose -f docker-compose.prod.yml up -d
+--scale api=3`) → Traefik on http://localhost — replicas, worker tier, 3-node replica set, shared
+S3-compatible attachments. Configuration template: [`.env.prod.example`](./.env.prod.example);
+tear down with `npm run stack:down`.
+
 ## Verification status
 
 Run everything locally with `npm run typecheck && npm test && npm run build`.
 
 | Check | Status | Detail |
 | --- | --- | --- |
-| API typecheck / build | ✅ passing | `tsc --noEmit`, `tsup` bundle |
-| API integration tests | ✅ 66 passing | real MongoDB; tenancy, RBAC, OCC, pagination, invitations, sockets |
-| Web typecheck / build | ✅ passing | route-level code splitting (initial JS 195 kB gzip) |
+| API typecheck / build | ✅ passing | `tsc --noEmit`, `tsup` bundle (index + seed/ensure-indexes/ensure-bucket scripts) |
+| API integration tests | ✅ 85 tests | real MongoDB; tenancy, RBAC, OCC, pagination, invitations, sockets, env rules, cache, health (1 test S3-gated: runs when `S3_TEST_ENDPOINT` is set, e.g. the CI SeaweedFS container) |
+| Web typecheck / build | ✅ passing | route-level code splitting (initial JS 636 kB raw / 196 kB gzip) |
 | Web unit tests | ✅ 16 passing | API client refresh single-flight, drag-drop math, task card |
 | Query benchmark | ✅ measured | `docs/benchmark-results.json` (10× p95; 20,000 → 40 docs examined with the compound index) |
 | HTTP load smoke | ✅ measured | `docs/load-smoke-results.json` — see honest interpretation below |
-| Scalability experiments (6) | ✅ all measured | **`docs/SCALABILITY_EXPERIMENTS.md`** — load at 10/50/100 conns, 400k-document DB scaling, caching (100 % hit ratio, single-flight), horizontal scaling (1.46–1.59×), concurrent writes (0 lost updates, 0 duplicate events), failure drills (0 failed requests, 0 jobs lost) |
+| Scalability experiments (8) | ✅ all measured | **`docs/SCALABILITY_EXPERIMENTS.md`** — load at 10/50/100 conns, 400k-document DB scaling, caching (100 % hit ratio, single-flight), horizontal scaling (1.46–1.59×), concurrent writes (0 lost updates), failure drills (0 failed requests, 0 jobs lost), **production topology (1→2 replicas +51 %, cross-replica realtime 417 ms, shared attachments, negative-cache A/B)**, **replica set (400k index build 15.5 s, failover 3.6 s with 0 failed reads/writes)** |
+| Production compose | ✅ smoke-verified + CI-validated | stack boots healthy with 2–3 replicas, readiness via Traefik, attachment served by every replica; `docker compose -f docker-compose.prod.yml config -q` runs in CI |
 | E2E (Playwright) | ✅ 6 passing | `npm run e2e` walks register → workspace → board → task → comment, plus filters |
 
 **Honest performance note.** On one instance, dashboard and project reads hold p97.5 ≈ 190–245 ms at 50
@@ -129,14 +138,19 @@ from 139 rps when it was silently truncating to 25 tasks. At 100 connections a s
 machine saturates (~200 rps) and latency queues — that is a property of the topology (load generator,
 API and MongoDB sharing one CPU), not a capacity claim. Two instances behind a load balancer lift
 throughput 1.46–1.59× at equal or better tail latency, and the failure drills show zero failed
-requests through a rolling restart. Methodology, raw artifacts and per-scenario tables:
+requests through a rolling restart. On the shipped production topology (Traefik + compose, Experiments
+7–8) 1 → 2 replicas add +51 % board throughput at 0 errors, restarting one replica under load costs
+0.24 % of requests (mid-flight connections cannot be replayed), a planned primary step-down moves
+leadership in 3.6 s with zero failed reads or writes, and 2 → 3 replicas plateaus because one host is
+CPU-saturated — all measured, all documented. Methodology, raw artifacts and per-scenario tables:
 [`docs/SCALABILITY_EXPERIMENTS.md`](./docs/SCALABILITY_EXPERIMENTS.md).
 
 ## Known limitations
 
 - Access tokens remain valid for up to 15 minutes after a session is revoked (short-TTL trade-off; revocation is immediate for refresh).
-- Without Redis the cache and job queue are in-process — correct for a single instance, not shared across replicas.
-- The S3 storage driver is implemented and type-checked but has not been exercised against a live bucket in this environment.
+- Without Redis the cache and job queue are in-process — correct for a single instance, not shared across replicas; production refuses to boot without `REDIS_URL`.
+- `docker restart` of one replica under load cuts ~0.24 % of in-flight requests (measured in Experiment 7); reaching zero needs orchestrator-style pre-deregistration (remove from the LB, wait a healthcheck interval, then stop). The app's graceful drain bounds everything else.
+- Secondary reads for analytics buy nothing on a single host (measured in Experiment 8) — the knob exists for multi-host replica sets.
 - Email delivery logs to the console unless `SMTP_URL` is configured; invitation links are also returned to admins so the flow works offline.
 - Presence (who is viewing a board / "N people online") is counted with `fetchSockets()`, so it is
   correct across replicas when the Socket.IO Redis adapter is active; without Redis it is per-instance.
@@ -154,7 +168,7 @@ requests through a rolling restart. Methodology, raw artifacts and per-scenario 
 - **[docs/ARCHITECTURE.md](./docs/ARCHITECTURE.md)** — modules, data model, request lifecycle, realtime design, security model.
 - **[docs/API.md](./docs/API.md)** — endpoint reference with permissions and error codes.
 - **[docs/BENCHMARKS.md](./docs/BENCHMARKS.md)** — methodology and measured results.
-- **[docs/SCALABILITY_EXPERIMENTS.md](./docs/SCALABILITY_EXPERIMENTS.md)** — the six scalability experiments with raw numbers, artifacts and reproduction commands.
+- **[docs/SCALABILITY_EXPERIMENTS.md](./docs/SCALABILITY_EXPERIMENTS.md)** — the eight scalability experiments (including the production topology and the replica set) with raw numbers, artifacts and reproduction commands.
 - **[docs/DEMO.md](./docs/DEMO.md)** — the 7-scenario demo script.
 
 ## License

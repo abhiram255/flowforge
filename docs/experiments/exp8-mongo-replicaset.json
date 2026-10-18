@@ -62,11 +62,7 @@
       "insertMs": 10404
     },
     "explain": {
-      "stages": [
-        "LIMIT",
-        "FETCH",
-        "IXSCAN"
-      ],
+      "stages": ["LIMIT", "FETCH", "IXSCAN"],
       "indexUsed": "workspaceId_1_projectId_1_status_1_position_1",
       "docsExamined": 100,
       "keysExamined": 100,

@@ -78,7 +78,10 @@ export async function initRedis(): Promise<CacheBackend> {
     backend = 'redis'
     logger.info('Redis connected — shared cache and BullMQ queues enabled')
   } catch (err) {
-    logger.warn({ err: (err as Error).message }, 'Redis unavailable — falling back to in-process cache and inline jobs')
+    logger.warn(
+      { err: (err as Error).message },
+      'Redis unavailable — falling back to in-process cache and inline jobs',
+    )
     candidate.disconnect()
   }
   return backend

@@ -67,7 +67,9 @@ export function buildEnvSchema() {
        * and task reads always use the primary). `secondaryPreferred` offloads
        * read-heavy aggregation work to replica-set secondaries.
        */
-      MONGODB_ANALYTICS_READ_PREFERENCE: z.enum(['primary', 'secondaryPreferred']).default('primary'),
+      MONGODB_ANALYTICS_READ_PREFERENCE: z
+        .enum(['primary', 'secondaryPreferred'])
+        .default('primary'),
       /**
        * Automatic index builds on boot. True in dev/test; production runs with
        * `false` and builds indexes through the one-shot `ensure-indexes` script,
@@ -182,7 +184,8 @@ export function buildEnvSchema() {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
           path: ['REDIS_URL'],
-          message: 'PROCESS_ROLE=worker requires REDIS_URL — there is nothing to work on without a queue',
+          message:
+            'PROCESS_ROLE=worker requires REDIS_URL — there is nothing to work on without a queue',
         })
       }
     })
@@ -222,7 +225,9 @@ export const env = {
   localStorageDirAbs: path.isAbsolute(data.LOCAL_STORAGE_DIR)
     ? data.LOCAL_STORAGE_DIR
     : path.resolve(apiRoot, data.LOCAL_STORAGE_DIR),
-  uploadTmpDirAbs: path.isAbsolute(uploadTmpDir) ? uploadTmpDir : path.resolve(apiRoot, uploadTmpDir),
+  uploadTmpDirAbs: path.isAbsolute(uploadTmpDir)
+    ? uploadTmpDir
+    : path.resolve(apiRoot, uploadTmpDir),
   /** Tests rely on implicit index builds (text search); production turns them off. */
   mongoAutoIndex: isTest ? true : data.MONGODB_AUTO_INDEX,
   /** This process serves HTTP traffic. */

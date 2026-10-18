@@ -260,7 +260,7 @@ flowforge/
 │   │   ├── src/realtime/     # Socket.IO gateway (rooms, presence)
 │   │   ├── src/jobs/         # BullMQ queue with an inline fallback
 │   │   ├── src/models/       # 11 collections with tenant-scoped indexes
-│   │   ├── src/tests/        # 66 integration tests against a real MongoDB
+│   │   ├── src/tests/        # 85 integration tests against a real MongoDB (1 S3-gated)
 │   │   └── scripts/          # seed, benchmark, load smoke, e2e bootstrap, experiments
 │   └── web/                  # React 19 + Vite + Tailwind v4 + TanStack Query + Zustand
 │       ├── src/features/     # auth, onboarding, dashboard, projects, board, task, team,
@@ -497,7 +497,7 @@ drain to its timeout, and the cache having no stampede protection. All four are 
 
 ```bash
 npm run typecheck   # strict TypeScript across api, web and shared
-npm test            # 66 API integration tests + 16 web unit tests (needs MongoDB)
+npm test            # 85 API integration tests + 16 web unit tests (needs MongoDB)
 npm run e2e         # 6 Playwright journeys against a seeded stack
 npm run build       # tsup (API) + vite (web)
 npm run bench       # writes docs/benchmark-results.json
@@ -508,14 +508,15 @@ Current status, as last run on this machine:
 
 | Check | Status | Detail |
 | --- | --- | --- |
-| API typecheck / build | passing | `tsc --noEmit`, `tsup` bundle |
-| API integration tests | 66 passing | real MongoDB: tenancy, RBAC, OCC races, pagination, invitations, sockets |
+| API typecheck / build | passing | `tsc --noEmit`, `tsup` bundle (index + ops scripts) |
+| API integration tests | 85 passing (1 S3-gated) | real MongoDB: tenancy, RBAC, OCC races, pagination, invitations, sockets, env rules, cache, health |
 | Web typecheck / build | passing | route-level code splitting; initial JS 196 kB gzip |
 | Web unit tests | 16 passing | refresh single-flight, drag-drop math, task card |
 | Playwright E2E | 6 passing | register → workspace → board → task → comment, plus filters |
 | Query benchmark | measured | `docs/benchmark-results.json` |
 | HTTP load smoke | measured | `docs/load-smoke-results.json` |
-| Scalability experiments | 6 measured | `docs/experiments/*.json` |
+| Scalability experiments | 8 measured | `docs/experiments/*.json` — the production topology and replica-set experiments included |
+| Production compose | smoke-verified | boots healthy at 2–3 replicas; readiness through Traefik; cross-replica attachments |
 
 The suites are not decorative. They are the reason the claims in section 1 can be made at all:
 
@@ -552,14 +553,32 @@ docker compose up --build      # → http://localhost:8080 (nginx front door)
 The compose stack runs MongoDB, Redis, the API and an nginx-served web build, seeds the demo dataset
 on first boot and wires `/api` and `/socket.io` through the proxy.
 
+**Production-shaped stack**
+
+```bash
+export JWT_ACCESS_SECRET="$(node -e "console.log(require('crypto').randomBytes(48).toString('base64url'))")"
+npm run stack:up                                                       # Traefik on :80, 2 replicas
+docker compose -f docker-compose.prod.yml up -d --scale api=3          # scale out (repeat --scale on every up)
+npm run stack:down
+```
+
+`docker-compose.prod.yml` is the deployment topology: Traefik v3.6 edge (health-checked pooling, retry
+middleware, sticky cookies for Socket.IO polling), `PROCESS_ROLE=api` replicas, a dedicated worker
+tier, a 3-node MongoDB replica set (`rs0`), SeaweedFS as the shared S3-compatible attachment store,
+one-shot `ensure-indexes`/`ensure-bucket` init, and an optional `observability` profile
+(Prometheus scraping every replica + Grafana). Only Traefik is published. Configuration reference:
+`.env.prod.example`; measurements of this exact topology: Experiments 7–8 in
+[SCALABILITY_EXPERIMENTS.md](./SCALABILITY_EXPERIMENTS.md).
+
 **Ports and services**
 
 | Service | Local dev | Docker | Notes |
 | --- | --- | --- | --- |
 | Web | 5173 | 8080 | proxies `/api` and `/socket.io` |
-| API | 4000 | 4000 | `/api/v1/health`, `/metrics` |
+| API | 4000 | 4000 | `/api/v1/health`, `/api/v1/health/ready`, `/metrics` |
 | MongoDB | 27017 | 27017 | `flowforge_dev`, `flowforge_test`, `flowforge_e2e` |
 | Redis | 6379 | 6379 | optional; enables shared cache, queues and rate limits |
+| Production stack | — | 80 (Traefik) | everything else internal; observability profile adds 9090/3000 |
 
 **Commands**
 
@@ -569,7 +588,9 @@ npm run seed        # idempotent; SEED_RESET=true wipes first
 npm run test:api    # integration suite only
 npm run test:web    # unit suite only
 npm run e2e         # Playwright against a seeded stack
-npm run exp:1 …6    # the scalability experiments
+npm run exp:1 …8    # the scalability experiments (7–8 drive the production compose stack)
+npm run stack:up    # build + start the production topology
+npm run stack:down  # stop it
 npm run format      # prettier
 ```
 
@@ -577,20 +598,27 @@ npm run format      # prettier
 
 **CI** (`.github/workflows/ci.yml`) runs on pushes to `main`/`develop` and on pull requests:
 
-1. **verify** — install, typecheck all workspaces, API integration tests, web unit tests, both
-   production builds, against a MongoDB service container.
+1. **verify** — install, typecheck all workspaces, API integration tests (with a SeaweedFS container
+   for the S3-gated test), web unit tests, both production builds, against a MongoDB service container.
 2. **e2e** — installs Chromium and runs the Playwright suite against an API booted with a seeded
    disposable database; the report is uploaded as an artifact.
-3. **docker** — validates `docker compose config` and builds both images (on `main`).
+3. **docker** — validates both compose files (`docker compose config -q` and
+   `docker compose -f docker-compose.prod.yml config -q`) and builds both images (on `main`).
 
 **CD** (`.github/workflows/deploy.yml`) publishes multi-tagged images to GHCR on every `main` push and
 deploys over SSH **only when the `DEPLOY_*` secrets are configured**; without them it explains the
-skip instead of failing.
+skip instead of failing. The deploy script exports SHA-pinned `API_IMAGE`/`WEB_IMAGE`, pulls them and
+runs `docker compose -f docker-compose.prod.yml up -d --remove-orphans --scale api=${API_REPLICAS:-2}
+--scale worker=${WORKER_REPLICAS:-1}` — the `--scale` flags must be repeated on every `up`, or the
+deployment silently drops back to one replica.
 
-**Observability.** The API exposes Prometheus metrics (request histograms and counters, a websocket
-gauge, process metrics) with `infra/monitoring/prometheus.yml` and a
-`infra/monitoring/grafana-dashboard.json` to light up. `load/k6/flowforge.js` runs a k6 scenario with
-p95 thresholds for load testing outside the machine that serves the app.
+**Observability.** The API exposes Prometheus metrics (request histograms and counters, websocket and
+BullMQ queue-depth gauges, cache counters, process metrics); liveness is `/api/v1/health` and readiness
+(DB + Redis, what the edge and Docker healthchecks probe) is `/api/v1/health/ready`. The dev config is
+`infra/monitoring/prometheus.yml`; the production stack ships a `dns_sd` scrape config
+(`prometheus.prod.yml`) that discovers every replica through compose DNS, and provisions the existing
+Grafana dashboard. `load/k6/flowforge.js` runs a k6 scenario with p95 thresholds for load testing
+outside the machine that serves the app.
 
 ---
 

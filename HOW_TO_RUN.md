@@ -70,6 +70,45 @@ docker compose up --build     # first build takes a few minutes
 
 Use `SEED_RESET=true docker compose up -d api` to wipe and reseed.
 
+### Production-shaped stack (Traefik + replicas + worker + replica set + SeaweedFS)
+
+The real deployment topology is `docker-compose.prod.yml` — the same file CI validates and the deploy
+workflow drives. It needs only Docker:
+
+```bash
+# 1) configuration: export the variables (shell env wins over the repo's dev .env).
+#    .env.prod.example is the full reference/template; on a deploy host it becomes that host's .env.
+export JWT_ACCESS_SECRET="$(node -e "console.log(require('crypto').randomBytes(48).toString('base64url'))")"
+export APP_URL=http://localhost CORS_ORIGINS=http://localhost   # your public origin otherwise
+# 2) build + start (Traefik publishes :80; every other service stays internal)
+npm run stack:up
+docker compose -f docker-compose.prod.yml up -d --scale api=3 --scale worker=1
+# 3) demo data for a demo/staging stack (refused unless explicitly forced)
+docker compose -f docker-compose.prod.yml run --rm --no-deps -e SEED_FORCE=true api \
+  node apps/api/dist/scripts/seed.js
+# 4) verify through the edge
+curl http://localhost/api/v1/health/ready    # {"status":"ready","checks":{"db":"up","redis":"up"}}
+curl http://localhost/api/v1/health          # liveness + cache/queue backends
+
+# Optional observability: Prometheus scrapes every replica (per-replica /metrics are internal)
+docker compose -f docker-compose.prod.yml --profile observability up -d
+#   Prometheus → http://localhost:9090   Grafana → http://localhost:3000
+
+# Teardown
+npm run stack:down
+```
+
+Notes that save time:
+- **Repeat `--scale` on every `up`** — omitting it silently drops back to one replica.
+- The repo-root `.env` is the *development* file and would leak dev values into interpolation; the
+  production stack must run with exported variables or from a deployment directory whose `.env` holds
+  production values (env validation refuses the dev JWT secret and requires Redis).
+- Open the app itself at **http://localhost** (Traefik routes `/` → web, `/api` + `/socket.io` → the
+  api pool). Because `COOKIE_SECURE=true` is enforced in production, browser refresh-cookie flows need
+  HTTPS at the edge; for API-level checks (curl, the experiments) access tokens work over HTTP.
+- Secure the bundled SeaweedFS credentials (`infra/seaweedfs/s3.json`) like any other secret before
+  exposing the stack.
+
 ---
 
 ## 3. Using the features
@@ -170,16 +209,23 @@ accepted). Click to jump to the task; *Mark all read*; per-user preferences live
 
 ```bash
 npm run typecheck            # all workspaces
-npm test                     # 66 API + 16 web tests (needs local MongoDB)
+npm test                     # 85 API + 16 web tests (needs local MongoDB)
 npm run build                # tsup (API) + vite (web)
 
 npm run bench                # MongoDB indexed vs unindexed benchmark → docs/benchmark-results.json
 npm run load                 # autocannon scenarios → docs/load-smoke-results.json
+npm run exp:1 … exp:6        # scalability experiments against local infra → docs/experiments/
+npm run exp:7                # production topology under load (needs Docker Desktop; leaves the stack up)
+npm run exp:8                # replica-set index build + failover + read-preference A/B
 npx playwright install chromium
 npm run e2e                  # Playwright boots a seeded API + web and walks auth & board journeys
                              # stop `npm run dev` first: Playwright reuses anything already on :4000,
                              # including its database, so you would run against flowforge_dev
                              # instead of the disposable flowforge_e2e
+
+# Compose validation (what CI runs)
+docker compose config -q
+docker compose -f docker-compose.prod.yml config -q
 
 # Redis-enabled cache/queue path: docker compose up -d mongo redis api
 curl http://localhost:4000/api/v1/health   # → { db: connected, cache: redis, queues: redis, ... }
@@ -203,9 +249,10 @@ curl -s http://localhost:4000/api/v1/workspaces -H "Authorization: Bearer $TOKEN
 | Service | Local dev | Docker | Notes |
 | --- | --- | --- | --- |
 | Web (Vite) | 5173 | 8080 (nginx) | proxies `/api` + `/socket.io` |
-| API | 4000 | 4000 | `/api/v1/health`, `/metrics` |
+| API | 4000 | 4000 | `/api/v1/health`, `/api/v1/health/ready`, `/metrics` |
 | MongoDB | 27017 | 27017 | databases: `flowforge_dev`, `flowforge_test`, `flowforge_e2e` |
 | Redis | 6379 | 6379 | optional; enables shared cache + BullMQ |
+| Production stack (`docker-compose.prod.yml`) | — | 80 (Traefik) | everything else internal; optional observability profile exposes 9090/3000 |
 
 ## 6. Common tasks cheat-sheet
 
@@ -218,6 +265,9 @@ npm run typecheck           # strict TS across the monorepo
 npm run bench               # query benchmark (writes docs/benchmark-results.json)
 npm run load                # HTTP load smoke (rate limiting disabled for the run)
 npm run e2e                 # Playwright journeys against a seeded stack
+npm run stack:up            # build + start the production topology (Traefik on :80)
+npm run stack:down          # stop it
+npm run exp:7 && npm run exp:8   # production-topology + replica-set experiments
 npm run format              # prettier
 ```
 

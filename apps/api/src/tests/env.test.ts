@@ -26,7 +26,9 @@ describe('environment validation', () => {
     expect(result.data.MONGODB_ANALYTICS_READ_PREFERENCE).toBe('primary')
     expect(result.data.API_RATE_LIMIT_PER_MIN).toBe(600)
     expect(result.data.CACHE_MEMORY_MAX_ENTRIES).toBe(5000)
-    expect(result.data.HTTP_HEADERS_TIMEOUT_MS).toBeGreaterThan(result.data.HTTP_KEEPALIVE_TIMEOUT_MS)
+    expect(result.data.HTTP_HEADERS_TIMEOUT_MS).toBeGreaterThan(
+      result.data.HTTP_KEEPALIVE_TIMEOUT_MS,
+    )
   })
 
   it('accepts a complete production environment', () => {
@@ -55,7 +57,9 @@ describe('environment validation', () => {
 
   it('refuses PROCESS_ROLE=worker without Redis', () => {
     expect(issuePaths({ PROCESS_ROLE: 'worker' })).toContain('REDIS_URL')
-    expect(parse({ PROCESS_ROLE: 'worker', REDIS_URL: 'redis://127.0.0.1:6379' }).success).toBe(true)
+    expect(parse({ PROCESS_ROLE: 'worker', REDIS_URL: 'redis://127.0.0.1:6379' }).success).toBe(
+      true,
+    )
   })
 
   it('refuses unknown process roles', () => {

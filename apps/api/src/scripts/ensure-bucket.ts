@@ -11,7 +11,7 @@ import { ensureBucket } from '../config/storage'
 
 const isDirectRun = process.argv[1]?.includes('ensure-bucket')
 if (isDirectRun) {
-  (async () => {
+  ;(async () => {
     if (env.STORAGE_DRIVER !== 's3') {
       logger.info('storage driver is local — no bucket to ensure')
       return

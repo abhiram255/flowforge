@@ -41,6 +41,50 @@ The API is a **modular monolith**: one deployable, but each domain lives in its 
 route file (HTTP concerns), a service file (business rules) and shared models. This keeps boundaries
 honest while avoiding distributed-system overhead before it is earned.
 
+### 1.1 Production topology (`docker-compose.prod.yml`)
+
+The dev compose above runs one of everything. Production runs the same image in **three roles**
+(`PROCESS_ROLE`) behind a real edge:
+
+```mermaid
+flowchart LR
+  LB["Traefik v3.6<br/>:80 (optional TLS)<br/>health-checked LB, retry, sticky cookie"]
+  subgraph EDGE["edge network"]
+    LB
+  end
+  subgraph INTERNAL["internal network (no host ports)"]
+    API1["api replica 1<br/>PROCESS_ROLE=api"]
+    API2["api replica 2..N<br/>PROCESS_ROLE=api"]
+    WK["worker<br/>PROCESS_ROLE=worker<br/>BullMQ consumers + /metrics"]
+    RS[("MongoDB rs0<br/>3 nodes")]
+    RDS[("Redis<br/>cache · queues · rate limits · adapter")]
+    S3[("SeaweedFS<br/>S3-compatible attachment store")]
+  end
+  LB --> API1
+  LB --> API2
+  API1 --> RS
+  API2 --> RS
+  API1 --> RDS
+  API2 --> RDS
+  API1 --> S3
+  API2 --> S3
+  WK --> RS
+  WK --> RDS
+```
+
+- **API replicas are stateless** — JWT access tokens need no session lookup, caches/queues/rate
+  limits live in Redis, attachments live in S3-compatible storage. Scale with
+  `docker compose -f docker-compose.prod.yml up -d --scale api=N` (repeat `--scale` on every `up`).
+- **Jobs only run in the worker tier** in production (`PROCESS_ROLE=api` keeps the queue handle for
+  enqueueing but never consumes); the worker exposes health + queue gauges, no business routes.
+- **Indexes are built by a one-shot** (`ensure-indexes`, `MONGODB_AUTO_INDEX=false`) so a large
+  collection never triggers a surprise build at boot; `ensure-bucket` guarantees the attachment
+  bucket exists.
+- **Health**: `/api/v1/health` is liveness, `/api/v1/health/ready` (DB + Redis) is what Traefik and
+  container healthchecks use — both are mounted ahead of the rate limiter so probes can never be
+  throttled. Measured behaviour of this topology: Experiment 7/8 in
+  [SCALABILITY_EXPERIMENTS.md](./SCALABILITY_EXPERIMENTS.md).
+
 ## 2. Request lifecycle
 
 Every `/api/v1` request flows through the same chain:
@@ -140,29 +184,33 @@ sequenceDiagram
 - Clients patch caches in place for `task:updated` (no refetch flicker) and invalidate for structural
   changes (`task:created`, `task:deleted`, comments, attachments).
 - On reconnect the client re-joins rooms and invalidates all queries — the guaranteed resync path.
-- Presence is tracked per instance (in-memory) and broadcast as viewer/id sets.
+- Presence uses **`fetchSockets()`** (adapter-aware): with the Redis adapter, "N people online" and
+  viewer sets are correct across every replica; without Redis it degrades to per-instance.
 
 ## 6. Attachments pipeline
 
 ```
-upload → multer memory (10 MB, MIME allow-list) → StorageDriver.put(key) →
-Attachment document → activity + socket event
+upload → multer disk temp (10 MB, MIME allow-list) → StorageDriver.putStream(key, file stream) →
+temp removed → Attachment document → activity + socket event
 download → auth → load attachment → membership check on its workspace → stream (Content-Disposition) →
 409/404 for non-members (never a redirect to a public URL)
 ```
 
-`LocalDiskDriver` (default) mirrors the interface of `S3Driver`, so switching `STORAGE_DRIVER=s3`
-requires only credentials/endpoint configuration.
+Uploads never sit in the Node heap: the HTTP layer parks the file in `UPLOAD_TMP_DIR` and the driver
+streams it (single signed `PutObject` for S3 with the content length). `LocalDiskDriver` (default)
+mirrors the interface of `S3Driver`; multi-replica deployments must use S3-compatible storage
+(SeaweedFS ships with the production compose) because replicas do not share local disks. The S3
+driver is integration-tested against a live, SigV4-enforcing server in CI.
 
 ## 7. Caching, jobs and observability
 
 | Concern | With Redis | Without Redis |
 | --- | --- | --- |
-| Analytics/dashboard snapshots | Redis keys with TTL, prefix-busted on writes | in-process Map with TTL (same semantics) |
+| Analytics/dashboard snapshots | Redis keys with TTL (downward-jittered), prefix-busted on writes, negative results cached behind a sentinel | in-process Map with TTL (bounded, sweep-on-write; same semantics) |
 | Workspace member "minis" | 30 s TTL, busted on membership writes | same |
-| Email + notification delivery | BullMQ queue with retries/exponential backoff | inline `await` with identical outcomes |
-| Rate limiting | in-memory (documented) | in-memory |
-| Health/metrics | `/api/v1/health` reports `cache` and `queues` backend; `/metrics` exposes Prometheus data (request histograms, counters, websocket gauge, process metrics) |
+| Email + notification delivery | BullMQ queue with retries/exponential backoff, consumed by the worker tier in production | inline `await` with identical outcomes |
+| Rate limiting | counters shared across replicas in Redis (one budget per client) | per-process counters |
+| Health/metrics | `/api/v1/health` (liveness) + `/api/v1/health/ready` (DB + Redis); `/metrics` exposes request histograms, counters, websocket gauge, cache counters, BullMQ queue depth and process metrics | same; readiness reports `redis: disabled` |
 
 ## 8. Security model (summary)
 

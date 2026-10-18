@@ -10,9 +10,7 @@
   "scaling": [
     {
       "replicas": 1,
-      "replicaNames": [
-        "flowforge-prod-api-1"
-      ],
+      "replicaNames": ["flowforge-prod-api-1"],
       "combinedCpuPercentOfOneCore": 151.1,
       "wallMs": 30941,
       "board": {
@@ -60,10 +58,7 @@
     },
     {
       "replicas": 2,
-      "replicaNames": [
-        "flowforge-prod-api-1",
-        "flowforge-prod-api-2"
-      ],
+      "replicaNames": ["flowforge-prod-api-1", "flowforge-prod-api-2"],
       "combinedCpuPercentOfOneCore": 274.7,
       "wallMs": 30182,
       "board": {
@@ -111,11 +106,7 @@
     },
     {
       "replicas": 3,
-      "replicaNames": [
-        "flowforge-prod-api-1",
-        "flowforge-prod-api-2",
-        "flowforge-prod-api-3"
-      ],
+      "replicaNames": ["flowforge-prod-api-1", "flowforge-prod-api-2", "flowforge-prod-api-3"],
       "combinedCpuPercentOfOneCore": 278.5,
       "wallMs": 30182,
       "board": {

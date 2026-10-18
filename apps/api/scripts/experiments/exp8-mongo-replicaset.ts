@@ -97,7 +97,9 @@ async function indexBuildAtScale(): Promise<IndexBuildReport> {
   const now = Date.now()
   const BATCH = 5000
 
-  logger.warn(`exp8: inserting ${TASK_COUNT} tasks + ${ACTIVITY_COUNT} activity records (no indexes yet)`)
+  logger.warn(
+    `exp8: inserting ${TASK_COUNT} tasks + ${ACTIVITY_COUNT} activity records (no indexes yet)`,
+  )
   const insertStart = Date.now()
   for (let offset = 0; offset < TASK_COUNT; offset += BATCH) {
     const batch = Array.from({ length: Math.min(BATCH, TASK_COUNT - offset) }, (_, index) => {
@@ -212,10 +214,7 @@ interface Poll {
   ms: number
 }
 
-async function failoverDrill(
-  token: string,
-  projectId: string,
-): Promise<Record<string, unknown>> {
+async function failoverDrill(token: string, projectId: string): Promise<Record<string, unknown>> {
   const primaryBefore = await primaryContainer()
   const boardUrl = `${API_BASE}/projects/${projectId}/tasks?sort=position`
 
@@ -410,7 +409,11 @@ async function main(): Promise<void> {
   await restoreProdTopology(3)
 
   const dockerVersion = (
-    await execCapture('flowforge-prod-api-1', ['node', '-e', "process.stdout.write(process.version)"])
+    await execCapture('flowforge-prod-api-1', [
+      'node',
+      '-e',
+      'process.stdout.write(process.version)',
+    ])
   ).trim()
 
   const artifact = {
