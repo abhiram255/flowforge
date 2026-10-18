@@ -13,7 +13,9 @@ import { v1Router } from './routes'
 export function createApp(): Express {
   const app = express()
 
-  app.set('trust proxy', 1)
+  // One hop by default (Traefik/nginx in front); set TRUST_PROXY_HOPS=0 when the
+  // API is exposed directly so X-Forwarded-For cannot be spoofed.
+  app.set('trust proxy', env.TRUST_PROXY_HOPS)
   app.disable('x-powered-by')
 
   app.use(requestIdMiddleware)

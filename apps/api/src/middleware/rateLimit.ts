@@ -89,10 +89,10 @@ class SharedStore implements Store {
   }
 }
 
-/** General API budget. */
+/** General API budget (operator-tunable; shared across replicas when Redis is on). */
 export const apiLimiter = rateLimit({
   windowMs: 60_000,
-  limit: 600,
+  limit: env.API_RATE_LIMIT_PER_MIN,
   store: new SharedStore('ff:rl:api:'),
   ...base,
 })

@@ -25,6 +25,15 @@ async function main(): Promise<void> {
 
   const app = createApp()
   const server = createServer(app)
+  // Keep-alive is deliberately longer than typical intermediary idle timeouts
+  // (Traefik/nginx) so load balancers pay for connection setup once, not per
+  // request, while an idle/abandoned connection cannot pin a socket forever.
+  // requestTimeout bounds only how long a client may take to *send* a request —
+  // it does not cap response time, and websocket upgrades plus streamed
+  // downloads leave the HTTP parser, so neither is cut off by it.
+  server.keepAliveTimeout = env.HTTP_KEEPALIVE_TIMEOUT_MS
+  server.headersTimeout = env.HTTP_HEADERS_TIMEOUT_MS
+  server.requestTimeout = env.HTTP_REQUEST_TIMEOUT_MS
   await initRealtime(server)
 
   await new Promise<void>((resolve) => {
@@ -33,7 +42,7 @@ async function main(): Promise<void> {
   logger.info({ port: env.PORT }, `FlowForge API listening on http://localhost:${env.PORT}`)
 
   let shuttingDown = false
-  const DRAIN_TIMEOUT_MS = 10_000
+  const DRAIN_TIMEOUT_MS = env.DRAIN_TIMEOUT_MS
   const shutdown = async (signal: string): Promise<void> => {
     if (shuttingDown) return
     shuttingDown = true
