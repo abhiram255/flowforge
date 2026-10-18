@@ -35,9 +35,22 @@ jobs:
           cache: npm
       - name: Install dependencies
         run: npm ci --include=dev
+      - name: Start SeaweedFS for the S3 driver integration test
+        run: |
+          docker run -d --name seaweedfs -p 8333:8333 \
+            -v "$PWD/infra/seaweedfs/s3.json:/etc/seaweedfs/s3.json" \
+            chrislusf/seaweedfs server -s3 -s3.config=/etc/seaweedfs/s3.json -dir=/data
+          for i in $(seq 1 30); do
+            curl -s -o /dev/null http://127.0.0.1:8333/ && break
+            sleep 1
+          done
       - name: Typecheck all workspaces
         run: npm run typecheck
       - name: API integration tests
+        env:
+          S3_TEST_ENDPOINT: http://127.0.0.1:8333
+          S3_TEST_ACCESS_KEY_ID: flowforge
+          S3_TEST_SECRET_ACCESS_KEY: flowforge-secret
         run: npm run test -w @flowforge/api
       - name: Web unit tests
         run: npm run test -w @flowforge/web

@@ -1,4 +1,5 @@
 import { randomUUID } from 'node:crypto'
+import { createReadStream } from 'node:fs'
 import path from 'node:path'
 import type { AttachmentDTO } from '@flowforge/shared'
 import { env } from '../../config/env'
@@ -33,7 +34,8 @@ export const ALLOWED_MIME_TYPES = new Set([
 ])
 
 export interface UploadedFile {
-  buffer: Buffer
+  /** Temp path the upload was parked at (removed by the route after handling). */
+  path: string
   originalname: string
   mimetype: string
   size: number
@@ -85,7 +87,8 @@ export async function uploadAttachment(
   const storageKey = `${String(ctx.workspace._id)}/${String(ctx.task._id)}/${randomUUID()}${extension}`
 
   const driver = getStorageDriver()
-  await driver.put(storageKey, file.buffer, file.mimetype)
+  // Streamed from the temp file — a 10 MB upload never sits in the heap.
+  await driver.putStream(storageKey, createReadStream(file.path), file.mimetype, file.size)
 
   const attachment = await Attachment.create({
     workspaceId: ctx.workspace._id,

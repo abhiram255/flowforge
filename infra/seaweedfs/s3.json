@@ -1,0 +1,9 @@
+{
+  "identities": [
+    {
+      "name": "flowforge",
+      "credentials": [{ "accessKey": "flowforge", "secretKey": "flowforge-secret" }],
+      "actions": ["Admin", "Read", "Write"]
+    }
+  ]
+}

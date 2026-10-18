@@ -1,8 +1,11 @@
+import { randomUUID } from 'node:crypto'
+import { unlink } from 'node:fs/promises'
+import path from 'node:path'
 import { Router } from 'express'
 import multer from 'multer'
 import { z } from 'zod'
 import { env } from '../../config/env'
-import { getStorageDriver } from '../../config/storage'
+import { ensureUploadTmpDir, getStorageDriver } from '../../config/storage'
 import { asyncHandler } from '../../lib/asyncHandler'
 import { AppError } from '../../lib/errors'
 import { isObjectId } from '../../lib/utils'
@@ -19,8 +22,25 @@ import {
   uploadAttachment,
 } from './attachments.service'
 
+ensureUploadTmpDir()
+
+/**
+ * Uploads are parked on disk, not in the heap: the service streams the temp
+ * file into the storage driver and the route removes it in `finally`.
+ * (`multer` cleans up partial files itself when a limit or filter rejects.)
+ */
 const upload = multer({
-  storage: multer.memoryStorage(),
+  storage: multer.diskStorage({
+    destination: env.uploadTmpDirAbs,
+    filename: (_req, file, callback) => {
+      const extension = path
+        .extname(file.originalname)
+        .slice(0, 12)
+        .toLowerCase()
+        .replace(/[^a-z0-9.]/g, '')
+      callback(null, `${randomUUID()}${extension}`)
+    },
+  }),
   limits: { fileSize: env.maxUploadBytes, files: 1 },
   fileFilter: (_req, file, callback) => {
     if (!ALLOWED_MIME_TYPES.has(file.mimetype)) {
@@ -51,13 +71,17 @@ taskAttachmentsRoutes.post(
   upload.single('file'),
   asyncHandler(async (req, res) => {
     if (!req.file) throw AppError.validation('No file provided (expected multipart field "file")')
-    const attachment = await uploadAttachment(getCtx(req), {
-      buffer: req.file.buffer,
-      originalname: req.file.originalname,
-      mimetype: req.file.mimetype,
-      size: req.file.size,
-    })
-    res.status(201).json({ attachment })
+    try {
+      const attachment = await uploadAttachment(getCtx(req), {
+        path: req.file.path,
+        originalname: req.file.originalname,
+        mimetype: req.file.mimetype,
+        size: req.file.size,
+      })
+      res.status(201).json({ attachment })
+    } finally {
+      await unlink(req.file.path).catch(() => undefined)
+    }
   }),
 )
 

@@ -1,6 +1,7 @@
-import { createReadStream } from 'node:fs'
-import { mkdir, rm, writeFile } from 'node:fs/promises'
+import { createReadStream, createWriteStream, mkdirSync } from 'node:fs'
+import { mkdir, rm } from 'node:fs/promises'
 import path from 'node:path'
+import { pipeline } from 'node:stream/promises'
 import type { Readable } from 'node:stream'
 import { env } from './env'
 import { logger } from './logger'
@@ -8,7 +9,12 @@ import { AppError } from '../lib/errors'
 
 export interface StorageDriver {
   readonly kind: 'local' | 's3'
-  put(key: string, data: Buffer, contentType: string): Promise<void>
+  /**
+   * Store a stream (uploads arrive as temp files on disk — never as heap
+   * buffers). `contentLength` lets the S3 driver stream a single PUT instead
+   * of buffering to discover the size.
+   */
+  putStream(key: string, stream: Readable, contentType: string, contentLength?: number): Promise<void>
   getStream(key: string): Promise<Readable>
   delete(key: string): Promise<void>
 }
@@ -17,6 +23,11 @@ function assertSafeKey(key: string): void {
   if (key.includes('..') || key.startsWith('/') || key.startsWith('\\') || key.includes('\\')) {
     throw AppError.internal('Unsafe storage key')
   }
+}
+
+/** Multer does not create its destination directory; do it before first use. */
+export function ensureUploadTmpDir(): void {
+  mkdirSync(env.uploadTmpDirAbs, { recursive: true })
 }
 
 class LocalDiskDriver implements StorageDriver {
@@ -32,10 +43,15 @@ class LocalDiskDriver implements StorageDriver {
     return path.join(this.baseDir, key)
   }
 
-  async put(key: string, data: Buffer): Promise<void> {
+  async putStream(key: string, stream: Readable): Promise<void> {
     const target = this.resolve(key)
     await mkdir(path.dirname(target), { recursive: true })
-    await writeFile(target, data)
+    try {
+      await pipeline(stream, createWriteStream(target))
+    } catch (error) {
+      await rm(target, { force: true }).catch(() => undefined)
+      throw error
+    }
   }
 
   async getStream(key: string): Promise<Readable> {
@@ -83,11 +99,24 @@ class S3Driver implements StorageDriver {
     return env.S3_BUCKET
   }
 
-  async put(key: string, data: Buffer, contentType: string): Promise<void> {
+  async putStream(
+    key: string,
+    stream: Readable,
+    contentType: string,
+    contentLength?: number,
+  ): Promise<void> {
     assertSafeKey(key)
     const { client, commands } = await this.getClient()
+    // With ContentLength set, the SDK streams the body straight to the socket;
+    // multipart (lib-storage) is unnecessary below the 10 MB upload cap.
     await client.send(
-      new commands.PutObjectCommand({ Bucket: this.bucket, Key: key, Body: data, ContentType: contentType }),
+      new commands.PutObjectCommand({
+        Bucket: this.bucket,
+        Key: key,
+        Body: stream,
+        ContentType: contentType,
+        ...(contentLength === undefined ? {} : { ContentLength: contentLength }),
+      }),
     )
   }
 
