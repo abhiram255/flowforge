@@ -1,5 +1,5 @@
 import { Router, type RequestHandler } from 'express'
-import { getCacheBackend } from './config/redis'
+import { checkRedisHealth, getCacheBackend } from './config/redis'
 import { isDatabaseConnected } from './config/db'
 import { APP_VERSION } from './config/env'
 import { queueBackend } from './jobs/queue'
@@ -14,7 +14,8 @@ import { projectTasksRoutes, tasksRoutes } from './modules/tasks/tasks.routes'
 import { usersRoutes } from './modules/users/users.routes'
 import { invitationsRoutes, workspacesRoutes } from './modules/workspaces/workspaces.routes'
 
-const healthHandler: RequestHandler = (_req, res) => {
+/** Liveness: the process is up; 503 only when the database connection is gone. */
+export const healthHandler: RequestHandler = (_req, res) => {
   const dbConnected = isDatabaseConnected()
   res.status(dbConnected ? 200 : 503).json({
     status: dbConnected ? 'ok' : 'degraded',
@@ -26,9 +27,28 @@ const healthHandler: RequestHandler = (_req, res) => {
   })
 }
 
+/**
+ * Readiness: what a load balancer should route on. The database must be
+ * connected, and when REDIS_URL is configured (always in production) the
+ * shared Redis connection must answer too — cache, queue and rate-limit state
+ * are only correct across replicas with it.
+ */
+export const readinessHandler: RequestHandler = async (_req, res) => {
+  const dbConnected = isDatabaseConnected()
+  const redis = await checkRedisHealth()
+  const ready = dbConnected && redis !== 'down'
+  res.status(ready ? 200 : 503).json({
+    status: ready ? 'ready' : 'degraded',
+    checks: { db: dbConnected ? 'up' : 'down', redis },
+    uptimeSeconds: Math.round(process.uptime()),
+    version: APP_VERSION,
+  })
+}
+
 export const v1Router = Router()
 
-v1Router.get('/health', healthHandler)
+// /health and /health/ready live in app.ts, mounted ahead of the rate limiter —
+// load-balancer probes must not consume the API budget.
 v1Router.use('/auth', authRoutes)
 v1Router.use('/users', usersRoutes)
 v1Router.use('/invitations', invitationsRoutes)

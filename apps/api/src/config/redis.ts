@@ -19,6 +19,38 @@ export function isRedisEnabled(): boolean {
   return backend === 'redis'
 }
 
+function withTimeout<T>(promise: Promise<T>, timeoutMs: number): Promise<T> {
+  return new Promise<T>((resolve, reject) => {
+    const timer = setTimeout(() => reject(new Error('redis health check timed out')), timeoutMs)
+    promise.then(
+      (value) => {
+        clearTimeout(timer)
+        resolve(value)
+      },
+      (error: unknown) => {
+        clearTimeout(timer)
+        reject(error as Error)
+      },
+    )
+  })
+}
+
+/**
+ * Readiness probe for the shared Redis connection:
+ *  - `disabled` when REDIS_URL is not configured (single-instance dev fallback)
+ *  - `down` when Redis was configured but no live client exists (or it fails to answer)
+ */
+export async function checkRedisHealth(timeoutMs = 1500): Promise<'up' | 'down' | 'disabled'> {
+  if (!env.REDIS_URL) return 'disabled'
+  if (!client) return 'down'
+  try {
+    const pong = await withTimeout(client.ping(), timeoutMs)
+    return pong === 'PONG' ? 'up' : 'down'
+  } catch {
+    return 'down'
+  }
+}
+
 /**
  * Connect to Redis when configured. When Redis is absent or unreachable the
  * application degrades gracefully: in-process cache + inline job processing.

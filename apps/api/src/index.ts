@@ -1,5 +1,5 @@
 import { createServer } from 'node:http'
-import { createApp } from './app'
+import { createApp, createOpsApp } from './app'
 import { connectDatabase, disconnectDatabase } from './config/db'
 import { APP_VERSION, env } from './config/env'
 import { logger } from './config/logger'
@@ -8,12 +8,18 @@ import { closeQueues, initQueues, startWorkers } from './jobs/queue'
 import { closeRealtime, initRealtime } from './realtime/io'
 
 async function main(): Promise<void> {
-  logger.info({ version: APP_VERSION, nodeEnv: env.NODE_ENV }, 'starting FlowForge API')
+  logger.info(
+    { version: APP_VERSION, nodeEnv: env.NODE_ENV, role: env.PROCESS_ROLE },
+    'starting FlowForge API',
+  )
 
   await connectDatabase()
   await initRedis()
+  // API replicas keep the queue handle even though they never consume jobs:
+  // without it `enqueue()` would fall back to running jobs inline in the
+  // request path instead of publishing them to the worker tier.
   initQueues()
-  startWorkers()
+  if (env.runsWorkers) startWorkers()
 
   if (env.SEED_ON_START) {
     if (env.isProduction) {
@@ -23,7 +29,9 @@ async function main(): Promise<void> {
     await seedDatabase({ reset: env.SEED_RESET })
   }
 
-  const app = createApp()
+  // The worker role serves only the ops surface (health, readiness, metrics);
+  // API replicas serve the full application.
+  const app = env.runsHttp ? createApp() : createOpsApp()
   const server = createServer(app)
   // Keep-alive is deliberately longer than typical intermediary idle timeouts
   // (Traefik/nginx) so load balancers pay for connection setup once, not per
@@ -34,7 +42,7 @@ async function main(): Promise<void> {
   server.keepAliveTimeout = env.HTTP_KEEPALIVE_TIMEOUT_MS
   server.headersTimeout = env.HTTP_HEADERS_TIMEOUT_MS
   server.requestTimeout = env.HTTP_REQUEST_TIMEOUT_MS
-  await initRealtime(server)
+  if (env.runsHttp) await initRealtime(server)
 
   await new Promise<void>((resolve) => {
     server.listen(env.PORT, () => resolve())

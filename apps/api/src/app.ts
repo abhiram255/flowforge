@@ -8,7 +8,7 @@ import { metricsHandler, metricsMiddleware } from './lib/metrics'
 import { errorHandler, notFoundHandler } from './middleware/errors'
 import { httpLogger, requestIdMiddleware } from './middleware/requestContext'
 import { apiLimiter } from './middleware/rateLimit'
-import { v1Router } from './routes'
+import { healthHandler, readinessHandler, v1Router } from './routes'
 
 export function createApp(): Express {
   const app = express()
@@ -39,11 +39,35 @@ export function createApp(): Express {
     res.json({ name: 'FlowForge API', version: APP_VERSION, health: '/api/v1/health' })
   })
 
+  // Liveness/readiness are mounted ahead of the rate limiter: load-balancer
+  // probes must never consume the API budget, or a busy minute could get
+  // healthy replicas ejected from rotation by a 429 health check.
+  app.get('/api/v1/health', healthHandler)
+  app.get('/api/v1/health/ready', readinessHandler)
+
   app.use('/api/v1', apiLimiter, v1Router)
   app.get('/metrics', metricsHandler)
 
   app.use(notFoundHandler)
   app.use(errorHandler)
 
+  return app
+}
+
+/**
+ * Minimal ops surface for the dedicated worker role: health/readiness for the
+ * container healthcheck plus the Prometheus exposition (queue gauges included).
+ * Deliberately exposes no business routes — nothing routes traffic to it.
+ */
+export function createOpsApp(): Express {
+  const app = express()
+  app.disable('x-powered-by')
+  app.use(requestIdMiddleware)
+  app.use(httpLogger)
+  app.get('/api/v1/health', healthHandler)
+  app.get('/api/v1/health/ready', readinessHandler)
+  app.get('/metrics', metricsHandler)
+  app.use(notFoundHandler)
+  app.use(errorHandler)
   return app
 }
