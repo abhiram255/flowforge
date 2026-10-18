@@ -1,0 +1,8 @@
+# Experiment overlay: run the API with the cache disabled for A/B measurements
+# (NODE_ENV=development makes CACHE_DISABLED legal — same methodology as exp1/3).
+# Never used in production.
+services:
+  api:
+    environment:
+      NODE_ENV: development
+      CACHE_DISABLED: 'true'

@@ -92,9 +92,17 @@ is **refused when `NODE_ENV=production`**.
 2. Horizontal scale behind a load balancer — **implemented and measured** (two instances → 1.46–1.59×
    throughput at equal or better tail latency, shared Redis rate-limit store, Socket.IO Redis adapter
    so rooms and events span replicas; presence counts via `fetchSockets()`). See Experiment 4.
+   **Shipped as `docker-compose.prod.yml`** (Traefik edge, `--scale api=N`, worker tier) and re-measured
+   on that exact stack in Experiment 7: 1 → 2 replicas +51 % board / +47 % dashboard, 0 errors.
 3. Trim the board payload (omit `description` from list views) — **implemented**; the edit dialog
    hydrates the full task before saving so long descriptions are never overwritten. See Experiment 1.
-4. Read analytics from a MongoDB secondary; keep writes on the primary. — still open.
+4. Read analytics from a MongoDB secondary; keep writes on the primary. — **implemented and measured**
+   (`MONGODB_ANALYTICS_READ_PREFERENCE`, prod compose uses `secondaryPreferred`; the analytics path is
+   the only one moved). Single-host measurement shows no gain (122 vs 119 rps) because the secondaries
+   share the CPU — see Experiment 8; the knob exists for multi-host replica sets.
+5. A 3-node MongoDB replica set now ships in the production compose: failover measured at 3.6 s with
+   zero failed reads/writes under load, and a 400k-document index build runs as a 15.5 s one-shot
+   instead of at boot (`MONGODB_AUTO_INDEX=false`). See Experiment 8.
 
 ---
 
@@ -129,6 +137,11 @@ section 2, so the run reports where the single instance breaks rather than flatt
 | 100% of critical E2E workflows passing | ✅ in CI (`playwright` job); runnable locally with `npm run e2e` | `.github/workflows/ci.yml` |
 | Indexed vs unindexed query performance documented | ✅ 10× p95, 20,000 → 40 docs examined; at 400k documents 88–229× p95 across query shapes | `benchmark-results.json`, `docs/experiments/exp2-database.json` |
 | No lost committed updates under tested concurrency | ✅ OCC race test, plus 20 same-version flights and 15 retried updates with zero lost writes or duplicate events | `tasks.test.ts`, `docs/experiments/exp5-concurrency.json` |
-| Zero failed requests through a rolling restart | ✅ graceful restart mid-load: 0 errors / 0 non-2xx; hard crash: 0 client-visible errors | `docs/experiments/exp6-resilience.json` |
+| Zero failed requests through a rolling restart | ⚠️ graceful restart/hard crash: ✅ 0 client errors (test balancer, exp6); shipping stack (Traefik + `docker restart`): 26 × 502 out of 10,989 (0.24 % — mid-flight connections cannot be replayed; orchestrator pre-deregistration is the zero-error path) | `docs/experiments/exp6-resilience.json`, `docs/experiments/exp7-production-topology.json` |
 | No jobs lost when a worker dies | ✅ 20/20 jobs completed after the worker was killed mid-flight | `docs/experiments/exp6-resilience.json` |
-| Shared state across replicas | ✅ 30/60 logins throttled under one shared budget; cross-instance realtime event in 97 ms | `docs/experiments/exp4-horizontal.json` |
+| Shared state across replicas | ✅ 30/60 logins throttled under one shared budget; cross-instance realtime event in 97 ms (test balancer) and 417 ms (shipping stack) | `docs/experiments/exp4-horizontal.json`, `docs/experiments/exp7-production-topology.json` |
+| Scale-out on the shipping stack | ✅ 1 → 2 replicas +51 % board / +47 % dashboard, 0 errors; ⚠️ 2 → 3 plateaus on a single host (CPU-saturated) | `docs/experiments/exp7-production-topology.json` |
+| Negative caching on 404-heavy traffic | ✅ 635 vs 333 rps and 4 vs 6,676 DB misses (cache on vs `CACHE_DISABLED`) | `docs/experiments/exp7-production-topology.json` |
+| 10 MB uploads never buffer in the heap | ✅ 8 concurrent uploads: 8 × 201, ≤ 11 MB RSS delta per replica, 0 restarts | `docs/experiments/exp7-production-topology.json` |
+| Replica-set index build at scale | ✅ 400k documents: one-shot build 15.5 s; explain uses the compound index with docsExamined = nReturned = 100 | `docs/experiments/exp8-mongo-replicaset.json` |
+| Primary failover under load | ✅ leadership moved in 3.6 s; 0 failed reads (102/102), 0 failed writes (52/52), 0 bulk errors | `docs/experiments/exp8-mongo-replicaset.json` |

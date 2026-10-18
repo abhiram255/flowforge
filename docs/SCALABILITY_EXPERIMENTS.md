@@ -1,8 +1,10 @@
 # FlowForge — Scalability Experiments
 
-Six experiments that measure how FlowForge behaves under load, at scale in the database, with and
+Eight experiments that measure how FlowForge behaves under load, at scale in the database, with and
 without caching, with more than one API instance behind a load balancer, under concurrent writes,
-and when things break.
+when things break — and (Experiments 7–8) on the **actual production topology**
+(`docker-compose.prod.yml`: Traefik edge, api replicas, worker tier, 3-node MongoDB replica set,
+SeaweedFS object storage), driven through the real load-balancer.
 
 **Every number in this document was produced by running the experiment on this machine.** Raw
 artifacts live in `docs/experiments/*.json`; each experiment is a reproducible script under
@@ -16,6 +18,8 @@ artifacts live in `docs/experiments/*.json`; each experiment is a reproducible s
 # 1. Infrastructure (Redis is optional for 2/5, required for 3/4/6)
 docker compose up -d redis            # or any Redis 7 on 127.0.0.1:6379
 # MongoDB 8 must be running on 127.0.0.1:27017 (local service or docker compose up -d mongo)
+# Experiments 7–8 need Docker Desktop only: they build and drive docker-compose.prod.yml
+# themselves (Traefik on :80, replica set, SeaweedFS) and leave the stack running.
 
 # 2. The experiments (from apps/api)
 npm run exp:1 -- --label baseline     # load: pre-improvement snapshot (kept for comparison)
@@ -25,10 +29,12 @@ npm run exp:3                         # caching: hit ratio, stampede, freshness
 npm run exp:4                         # horizontal scaling: 1 vs 2 instances + shared state
 npm run exp:5                         # concurrent task updates
 npm run exp:6                         # reliability: restart, crash, worker kill, socket failover
+npm run exp:7                         # production topology: scaling, rolling restart, cross-replica, cache A/B
+npm run exp:8                         # replica set: 400k-document index build, failover, read preference
 ```
 
 Artifacts are written to `docs/experiments/`. Each run drops its own scratch database
-(`flowforge_exp1` … `flowforge_exp6`) at the end.
+(`flowforge_exp1` … `flowforge_exp6`, `flowforge_exp8scale`) at the end.
 
 ## Environment
 
@@ -36,8 +42,9 @@ Artifacts are written to `docs/experiments/`. Each run drops its own scratch dat
 | --- | --- |
 | Machine | Intel Core i9-10885H, 8 cores / 16 logical, 31.8 GB RAM, Windows 11 x64 |
 | Node / npm | v22.17.1 / 11.15.0 |
-| MongoDB | 8.x, single node on `127.0.0.1:27017` (local service) |
+| MongoDB | 8.x, single node on `127.0.0.1:27017` for exp1–6; **3-node replica set (rs0) in Docker for exp7–8** |
 | Redis | 7.4.11 in Docker (`docker compose up -d redis`) |
+| Docker Engine | 29.1.3 (Docker Desktop; Traefik v3.6 required for API auto-negotiation) |
 | Topology | API + web + MongoDB + Redis + the load generator **all on this one machine** |
 
 **Read the numbers as engineering measurements, not capacity claims.** The load generator, the API
@@ -275,6 +282,126 @@ idempotent requests), not the nginx configuration that ships in `infra/docker/`.
 
 ---
 
+## Experiment 7 — The production topology under load
+
+**Question.** Experiments 1–6 used spawned processes and a test balancer. Does the *shipped*
+production stack — `docker-compose.prod.yml`: Traefik edge, `PROCESS_ROLE=api` replicas, a separate
+worker, 3-node MongoDB replica set, SeaweedFS attachments, all load-balanced through port 80 —
+behave the same way under load?
+
+**Method.** The harness (`scripts/experiments/docker.ts`, `exp7-production.ts`) drives the real
+compose stack: `docker compose up -d --scale api=N`, wait for Docker health *and* for a streak of
+fast probes through Traefik (convergence gate — see honest notes), then autocannon through
+`http://localhost` with a status-code breakdown. Everything below is one run;
+`docs/experiments/exp7-production-topology.json` has the raw data.
+
+### Scaling efficiency (board + dashboard @ 50 connections, Traefik edge)
+
+| Replicas | Board rps | Board p50 / p97.5 | Dashboard rps | Dashboard p97.5 | Combined API CPU |
+| --- | --- | --- | --- | --- | --- |
+| 1 | 152 | 311 / 480 ms | 260 | 396 ms | 151 % of one core |
+| 2 | **229** | 236 / 462 ms | **381** | 309 ms | 275 % |
+| 3 | 221 | 212 / 502 ms | **444** | 257 ms | 279 % |
+
+**Honest reading:** 1 → 2 replicas gives +51 % board and +47 % dashboard throughput with **zero
+errors in every run**. 2 → 3 does **not** lift the board path on this machine (229 → 221 rps): the
+combined CPU is already at ~2.8 cores, i.e. the single host — load generator, Traefik, three api
+replicas, three mongod nodes, Redis and SeaweedFS — is saturated. The dashboard path still improves
+(381 → 444). Sublinear scale-out on one box is the expected, measured ceiling; the fleet is CPU-bound,
+not coordination-bound.
+
+### Rolling restart under load (30 connections, restart one of three replicas mid-run)
+
+| Metric | Value |
+| --- | --- |
+| Requests | 10,989 in 40 s (275 rps) |
+| Client-visible errors | **26 × 502 (0.24 %)** — no timeouts |
+| Latency while one replica restarts | p50 107 ms, p97.5 177 ms |
+| `docker restart -t 25` wall time | 26.1 s (drain + boot before the tool returns) |
+
+The residual 0.24 % are requests whose connections were cut mid-flight when the replica drained:
+Traefik's retry middleware replays requests that fail *before* anything was sent, but a request
+already written to a dying connection cannot be safely replayed (it could have been applied).
+This is measured reality, not a defect: true zero-downtime restarts need the orchestrator pattern
+(deregister → wait ≥ healthcheck interval → stop), which plain `docker restart` does not provide.
+
+### Cross-replica realtime, shared attachments, cache
+
+| Check | Result |
+| --- | --- |
+| Realtime event across replicas (write on api-1, socket held by api-2) | ✅ received in **417 ms** |
+| Attachment uploaded via Traefik, downloaded from **each** replica directly | ✅ 200 / 200 / 200 (shared SeaweedFS) |
+| Cold analytics key, 12 parallel requests across 3 replicas | **1 producer run** (1 coalesced) — the shared Redis cache absorbs cross-replica duplicates beyond the per-process single-flight bound |
+| 8 concurrent 10 MB uploads | ✅ 8 × 201; per-replica RSS delta 0.1–11.1 MB; 0 restarts (streamed uploads never buffer the file) |
+
+### Negative caching A/B (404-heavy traffic: unknown workspace id, cache on vs `CACHE_DISABLED`)
+
+| Arm | Throughput | p50 / p97.5 | DB work (cache misses across replicas) |
+| --- | --- | --- | --- |
+| Cache on (negative caching active) | **635 rps** | 15 / 32 ms | **4** |
+| `CACHE_DISABLED=true` | 333 rps | 28 / 53 ms | **6,676** |
+
+Every 404 is served from the cached negative result: 1.9× the throughput and ~1,670× less database
+work on bogus-reference traffic. (All responses are deliberate 404s in both arms.)
+
+**Honest notes.** Single host, as in every experiment here. Two harness findings worth recording:
+- A fresh api container starts its Docker healthcheck slowly, and Traefik can briefly keep pooled
+  backend connections to a replica that was just recreated/drained — a request sent onto such a
+  connection *hangs* instead of failing, which polluted the first run's transitions (2.6 % "timeout"
+  errors that were client-side aborts). The harness now gates every measured scenario on 8
+  consecutive < 1 s probes through the edge, and the fixed harness JWT secret stops `up` from
+  recreating replicas between runs. The numbers above are from the corrected run.
+- Traefik v3.5 cannot talk to Docker Engine 29 (its client negotiates API 1.24; the daemon requires
+  ≥ 1.44). The compose file pins v3.6, which auto-negotiates.
+
+---
+
+## Experiment 8 — MongoDB replica set: index build at scale, failover, secondary reads
+
+**Method.** Same production stack, 3-node replica set (`rs0`). A scratch database
+(`flowforge_exp8scale`) gets 200k tasks + 200k activity documents, the prod one-shot
+`ensure-indexes` builds the real index set over it, the board query's explain plan is captured,
+then the drill: with load running, the primary is stepped down (`rs.stepDown(25)`) while a 250 ms
+read poller and a 500 ms write probe watch the app through Traefik.
+
+### Index build over 400,000 documents (autoIndex is off in the prod stack)
+
+| Step | Measured |
+| --- | --- |
+| Dataset insert (200k tasks + 200k activity) | 10.4 s |
+| `ensure-indexes` one-shot, all 11 collections | **15.5 s total** (tasks 12.0 s, activitylogs 2.9 s, everything else < 100 ms) |
+| Board query plan | `LIMIT → FETCH → IXSCAN` on `workspaceId_1_projectId_1_status_1_position_1`, executionTime 51 ms |
+| Work done | docsExamined **100** = keysExamined **100** = nReturned **100** (exactly the page) |
+
+This is why production runs `MONGODB_AUTO_INDEX=false`: the ~15 s build happens once, in a one-shot
+service before replicas start, instead of as a surprise on the first boot against a live collection.
+
+### Failover drill (primary stepped down mid-load)
+
+| Metric | Value |
+| --- | --- |
+| Leadership | mongo1 → **mongo2 in 3.6 s**; mongo1 re-elected itself after its 25 s freeze (priority 2) |
+| Read poller (board every 250 ms) | **102 polls, 0 failures**, p50 140 ms, max 974 ms during the election |
+| Write probe (task create every 500 ms) | **52 writes, 52 × 201** — no write lost during failover |
+| Bulk load (board @ 30 connections) | 8,560 requests, **0 non-2xx, 0 connection errors**, p97.5 303 ms |
+| Readiness after | 200 |
+
+**Honest reading:** with retryable reads/writes and server selection, a planned step-down of the
+primary is invisible to clients at this scale — no failed request, sub-second worst latency.
+The `MONGODB_ANALYTICS_READ_PREFERENCE` A/B tells a more cautious story:
+
+| Arm (cache disabled, aggregations run every request) | Throughput | p50 / p97.5 |
+| --- | --- | --- |
+| `secondaryPreferred` | 122 rps | 248 / 420 ms |
+| `primary` | 119 rps | 228 / 480 ms |
+
+On a **single host** the three mongod nodes share one CPU, so reading from a secondary buys
+nothing measurable (the difference is noise). The knob defaults to `primary`; the prod compose
+sets `secondaryPreferred` because the gain appears when secondaries live on separate hardware —
+that claim is *not* measured here, and the docs say so.
+
+---
+
 ## Verdicts against the stated goals
 
 | # | Experiment | Goal | Verdict |
@@ -285,19 +412,31 @@ idempotent requests), not the nginx configuration that ships in `infra/docker/`.
 | 4 | Horizontal scaling | Does throughput scale across processes; is shared state handled? | ✅ 1.46–1.59× throughput, 50/50 split, 0 errors; ✅ shared rate-limit budget (30/60); ✅ cross-instance realtime events (97 ms) |
 | 5 | Concurrent updates | Conflicts, lost updates, duplicate events, consistency | ✅ 20/20 rounds with exactly one winner; 0 lost updates; 0 duplicate events (36/36); final state matches the winner; 0 server errors |
 | 6 | Reliability under failure | Failed requests, recovery time, dropped jobs, reconnections | ✅ 0 failed requests for both graceful restart and hard crash; job loss 0/20; socket reconnect 1.4 s with events resumed |
+| 7 | Production topology (`docker-compose.prod.yml`) | Does the shipped stack scale, survive restarts, share state, and cache correctly through a real edge LB? | ✅ 1 → 2 replicas +51 % board / +47 % dashboard, 0 errors; ⚠️ 2 → 3 plateaus on one host (CPU-saturated — measured, explained); ⚠️ single-replica `docker restart` under load: 0.24 % 502s (mid-flight cuts; needs orchestrator pre-deregistration for true 0); ✅ cross-replica event 417 ms; ✅ shared attachments 200/200/200; ✅ cold key: 1 producer for 12 parallel requests; ✅ negative caching 635 vs 333 rps and 4 vs 6,676 DB misses; ✅ 8 × 10 MB uploads ≤ 11 MB RSS delta, 0 restarts |
+| 8 | Replica set (rs0) | Index build at 400k docs, failover under load, secondary reads | ✅ 15.5 s one-shot index build, explain docsExamined = nReturned = 100; ✅ leadership moved in 3.6 s with 0 failed reads (102/102), 0 failed writes (52/52), 0 bulk errors; ⚠️ secondary reads show no gain on a single host (122 vs 119 rps — noise); value is for multi-host deployments |
 
 ## Known limits (unchanged or newly documented)
 
 - **Single-machine measurements.** Load generator, API, Redis and MongoDB share one CPU; the
   ~190–250 rps single-instance ceiling and the 100-connection latencies are properties of this
-  topology. A dedicated load generator and a MongoDB replica set are the next honest steps.
+  topology. The MongoDB replica set now ships in `docker-compose.prod.yml` (Experiment 8), so a
+  **dedicated load-generator host** is the remaining honest step for capacity claims.
 - **Presence across replicas** now uses `fetchSockets()` (adapter-aware) instead of a per-process map,
   so "N people online" is correct across instances **when the Redis adapter is enabled**; without
   Redis it remains per-instance, as documented.
 - **Access-cache staleness**: a user row deleted directly in the database keeps working for up to 30 s;
   a role change is effective within 15 s at worst (immediately via invalidation, globally with Redis).
-- The **S3 storage driver** remains untested against a live bucket; **password reset / email
-  verification** are still not implemented. Both are pre-existing and documented in `DECISIONS.md`.
+- **Zero-downtime restarts are orchestrator work, not app work**: a `docker restart` of one replica
+  under load still cuts 0.24 % of in-flight requests (Experiment 7); the app drains in-flight requests
+  within `DRAIN_TIMEOUT_MS`, but requests sent onto a connection that is already closing cannot be
+  replayed. The orchestrator pattern (deregister → wait for the LB healthcheck interval → stop) is the
+  way to reach zero, and is documented as such.
+- **Secondary reads**: measured to buy nothing on a single host (Experiment 8); the prod compose sets
+  `secondaryPreferred` for analytics because the value appears on multi-host replica sets — flagged
+  as not measured here.
+- The **S3 storage driver** is now integration-tested against a live, SigV4-enforcing SeaweedFS
+  (locally and in CI); **password reset / email verification** are still not implemented. Both are
+  tracked in `DECISIONS.md`.
 
 ## Artifacts
 
@@ -309,3 +448,5 @@ idempotent requests), not the nginx configuration that ships in `infra/docker/`.
 | `docs/experiments/exp4-horizontal.json` | Experiment 4, single vs dual, per-instance distribution, shared limits, realtime fan-out |
 | `docs/experiments/exp5-concurrency.json` | Experiment 5, three scenes, all verdicts |
 | `docs/experiments/exp6-resilience.json` | Experiment 6, four drills with timings and balancer events |
+| `docs/experiments/exp7-production-topology.json` | Experiment 7, scaling 1/2/3 replicas, rolling restart with status codes, cross-replica realtime, shared attachments, cold-key producers, negative-cache A/B, upload RSS |
+| `docs/experiments/exp8-mongo-replicaset.json` | Experiment 8, 400k-document index build + explain, failover drill (leadership sequence, read poller, write probe), read-preference A/B |

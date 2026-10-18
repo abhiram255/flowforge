@@ -186,7 +186,7 @@ export interface MetricsSnapshot {
   cacheCoalesced: number | null
 }
 
-const parsePrometheus = (text: string): Map<string, number> => {
+export const parsePrometheus = (text: string): Map<string, number> => {
   const totals = new Map<string, number>()
   for (const line of text.split('\n')) {
     if (!line || line.startsWith('#')) continue

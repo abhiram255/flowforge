@@ -1,0 +1,7 @@
+# Experiment overlay (exp7/exp8): publish mongo1 so host-side tooling can
+# generate scratch datasets and read explain plans with directConnection.
+# Never used in production.
+services:
+  mongo1:
+    ports:
+      - '27018:27017'

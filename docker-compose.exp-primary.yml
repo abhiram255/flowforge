@@ -1,0 +1,7 @@
+# Experiment overlay: force analytics reads onto the primary for the exp8
+# read-preference A/B (the prod stack defaults to secondaryPreferred).
+# Never used in production.
+services:
+  api:
+    environment:
+      MONGODB_ANALYTICS_READ_PREFERENCE: primary

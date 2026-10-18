@@ -1,0 +1,355 @@
+{
+  "experiment": "exp7-production-topology",
+  "generatedAt": "2026-10-18T05:47:26.394Z",
+  "environment": {
+    "dockerEngine": "29.1.3",
+    "topology": "docker-compose.prod.yml (Traefik edge, 3-node Mongo RS, SeaweedFS, worker tier)",
+    "caveat": "Single host: load generator, Traefik, api replicas, MongoDB nodes, Redis and SeaweedFS share one CPU. Numbers describe this topology, not production capacity.",
+    "rateLimit": "API_RATE_LIMIT_PER_MIN raised for the run (default 600 would 429 the generator)"
+  },
+  "scaling": [
+    {
+      "replicas": 1,
+      "replicaNames": [
+        "flowforge-prod-api-1"
+      ],
+      "combinedCpuPercentOfOneCore": 151.1,
+      "wallMs": 30941,
+      "board": {
+        "name": "board @50 (1 replicas)",
+        "url": "<traefik>/api/v1/projects/6ad450ca4100ecc2f696b4a5/tasks?sort=position",
+        "connections": 50,
+        "durationSeconds": 15,
+        "requestsPerSecond": 152,
+        "latencyMs": {
+          "average": 325.7,
+          "p50": 311,
+          "p97_5": 480,
+          "p99": 724,
+          "max": 1483
+        },
+        "totalRequests": 2280,
+        "non2xx": 0,
+        "errors": 0,
+        "timeouts": 0,
+        "statusCodeStats": {
+          "200": 2280
+        }
+      },
+      "dashboard": {
+        "name": "dashboard @50 (1 replicas)",
+        "url": "<traefik>/api/v1/workspaces/6ad450ca4100ecc2f696b494/analytics/dashboard",
+        "connections": 50,
+        "durationSeconds": 15,
+        "requestsPerSecond": 260,
+        "latencyMs": {
+          "average": 191,
+          "p50": 170,
+          "p97_5": 396,
+          "p99": 464,
+          "max": 1254
+        },
+        "totalRequests": 3903,
+        "non2xx": 0,
+        "errors": 0,
+        "timeouts": 0,
+        "statusCodeStats": {
+          "200": 3903
+        }
+      }
+    },
+    {
+      "replicas": 2,
+      "replicaNames": [
+        "flowforge-prod-api-1",
+        "flowforge-prod-api-2"
+      ],
+      "combinedCpuPercentOfOneCore": 274.7,
+      "wallMs": 30182,
+      "board": {
+        "name": "board @50 (2 replicas)",
+        "url": "<traefik>/api/v1/projects/6ad450ca4100ecc2f696b4a5/tasks?sort=position",
+        "connections": 50,
+        "durationSeconds": 15,
+        "requestsPerSecond": 229,
+        "latencyMs": {
+          "average": 216.4,
+          "p50": 236,
+          "p97_5": 462,
+          "p99": 548,
+          "max": 894
+        },
+        "totalRequests": 3440,
+        "non2xx": 0,
+        "errors": 0,
+        "timeouts": 0,
+        "statusCodeStats": {
+          "200": 3440
+        }
+      },
+      "dashboard": {
+        "name": "dashboard @50 (2 replicas)",
+        "url": "<traefik>/api/v1/workspaces/6ad450ca4100ecc2f696b494/analytics/dashboard",
+        "connections": 50,
+        "durationSeconds": 15,
+        "requestsPerSecond": 381,
+        "latencyMs": {
+          "average": 130.1,
+          "p50": 117,
+          "p97_5": 309,
+          "p99": 378,
+          "max": 1001
+        },
+        "totalRequests": 5717,
+        "non2xx": 0,
+        "errors": 0,
+        "timeouts": 0,
+        "statusCodeStats": {
+          "200": 5717
+        }
+      }
+    },
+    {
+      "replicas": 3,
+      "replicaNames": [
+        "flowforge-prod-api-1",
+        "flowforge-prod-api-2",
+        "flowforge-prod-api-3"
+      ],
+      "combinedCpuPercentOfOneCore": 278.5,
+      "wallMs": 30182,
+      "board": {
+        "name": "board @50 (3 replicas)",
+        "url": "<traefik>/api/v1/projects/6ad450ca4100ecc2f696b4a5/tasks?sort=position",
+        "connections": 50,
+        "durationSeconds": 15,
+        "requestsPerSecond": 221,
+        "latencyMs": {
+          "average": 225.3,
+          "p50": 212,
+          "p97_5": 502,
+          "p99": 617,
+          "max": 924
+        },
+        "totalRequests": 3313,
+        "non2xx": 0,
+        "errors": 0,
+        "timeouts": 0,
+        "statusCodeStats": {
+          "200": 3313
+        }
+      },
+      "dashboard": {
+        "name": "dashboard @50 (3 replicas)",
+        "url": "<traefik>/api/v1/workspaces/6ad450ca4100ecc2f696b494/analytics/dashboard",
+        "connections": 50,
+        "durationSeconds": 15,
+        "requestsPerSecond": 444,
+        "latencyMs": {
+          "average": 112.1,
+          "p50": 104,
+          "p97_5": 257,
+          "p99": 320,
+          "max": 534
+        },
+        "totalRequests": 6656,
+        "non2xx": 0,
+        "errors": 0,
+        "timeouts": 0,
+        "statusCodeStats": {
+          "200": 6656
+        }
+      }
+    }
+  ],
+  "rollingRestart": {
+    "restartedReplica": "flowforge-prod-api-3",
+    "restartTookMs": 26116,
+    "load": {
+      "name": "board @30 during replica restart",
+      "url": "<traefik>/api/v1/projects/6ad450ca4100ecc2f696b4a5/tasks?sort=position",
+      "connections": 30,
+      "durationSeconds": 40,
+      "requestsPerSecond": 275,
+      "latencyMs": {
+        "average": 108.7,
+        "p50": 107,
+        "p97_5": 177,
+        "p99": 197,
+        "max": 1164
+      },
+      "totalRequests": 10989,
+      "non2xx": 26,
+      "errors": 0,
+      "timeouts": 0,
+      "statusCodeStats": {
+        "200": 10963,
+        "502": 26
+      }
+    },
+    "totalRequests": 10989,
+    "clientVisibleErrorPct": 0.24,
+    "restartCountsAfter": [
+      {
+        "name": "flowforge-prod-api-1",
+        "restarts": 0
+      },
+      {
+        "name": "flowforge-prod-api-2",
+        "restarts": 0
+      },
+      {
+        "name": "flowforge-prod-api-3",
+        "restarts": 0
+      }
+    ]
+  },
+  "crossReplicaRealtime": {
+    "socketHeldBy": "flowforge-prod-api-2",
+    "writeExecutedOn": "flowforge-prod-api-1",
+    "crossReplica": true,
+    "writeStatus": 200,
+    "eventLatencyMs": 417
+  },
+  "sharedAttachments": {
+    "attachmentId": "6ad45cf12fbb8a00655bf2a2",
+    "uploadStatus": 201,
+    "viaTraefikStatus": 200,
+    "viaTraefikMatches": true,
+    "perReplicaDownload": [
+      {
+        "replica": "flowforge-prod-api-1",
+        "status": 200,
+        "bytes": 33
+      },
+      {
+        "replica": "flowforge-prod-api-2",
+        "status": 200,
+        "bytes": 33
+      },
+      {
+        "replica": "flowforge-prod-api-3",
+        "status": 200,
+        "bytes": 33
+      }
+    ],
+    "sharedStoreProven": true
+  },
+  "coldKeyProducers": {
+    "parallelRequests": 12,
+    "statuses": {
+      "200": 12
+    },
+    "producerRunsAcrossReplicas": 1,
+    "coalescedAcrossReplicas": 1,
+    "perReplicaMissDelta": [
+      {
+        "replica": "flowforge-prod-api-1",
+        "misses": 0
+      },
+      {
+        "replica": "flowforge-prod-api-2",
+        "misses": 1
+      },
+      {
+        "replica": "flowforge-prod-api-3",
+        "misses": 0
+      }
+    ]
+  },
+  "negativeCache": {
+    "cacheOn": {
+      "label": "cache on (negative caching active)",
+      "scenario": {
+        "name": "404 probes (cache on (negative caching active))",
+        "url": "<traefik>/api/v1/workspaces/000000000000000000000000/analytics",
+        "connections": 10,
+        "durationSeconds": 10,
+        "requestsPerSecond": 635,
+        "latencyMs": {
+          "average": 15.3,
+          "p50": 15,
+          "p97_5": 32,
+          "p99": 40,
+          "max": 57
+        },
+        "totalRequests": 6345,
+        "non2xx": 6345,
+        "errors": 0,
+        "timeouts": 0,
+        "statusCodeStats": {
+          "404": 6345
+        }
+      },
+      "responses404": 6345,
+      "cacheMissesDelta": 4
+    },
+    "cacheDisabled": {
+      "label": "CACHE_DISABLED=true",
+      "scenario": {
+        "name": "404 probes (CACHE_DISABLED=true)",
+        "url": "<traefik>/api/v1/workspaces/000000000000000000000000/analytics",
+        "connections": 10,
+        "durationSeconds": 10,
+        "requestsPerSecond": 333,
+        "latencyMs": {
+          "average": 29.6,
+          "p50": 28,
+          "p97_5": 53,
+          "p99": 65,
+          "max": 166
+        },
+        "totalRequests": 3328,
+        "non2xx": 3328,
+        "errors": 0,
+        "timeouts": 0,
+        "statusCodeStats": {
+          "404": 3328
+        }
+      },
+      "responses404": 3328,
+      "cacheMissesDelta": 6676
+    }
+  },
+  "uploadMemory": {
+    "concurrentUploads": 8,
+    "uploadSizeMb": 10,
+    "statuses": {
+      "201": 8
+    },
+    "rssMbPerReplica": [
+      {
+        "replica": "flowforge-prod-api-1",
+        "beforeMb": 113.1,
+        "afterMb": 113.2,
+        "deltaMb": 0.1
+      },
+      {
+        "replica": "flowforge-prod-api-2",
+        "beforeMb": 111.9,
+        "afterMb": 114.3,
+        "deltaMb": 2.4
+      },
+      {
+        "replica": "flowforge-prod-api-3",
+        "beforeMb": 109.8,
+        "afterMb": 120.9,
+        "deltaMb": 11.1
+      }
+    ],
+    "restartCountsAfter": [
+      {
+        "name": "flowforge-prod-api-1",
+        "restarts": 0
+      },
+      {
+        "name": "flowforge-prod-api-2",
+        "restarts": 0
+      },
+      {
+        "name": "flowforge-prod-api-3",
+        "restarts": 0
+      }
+    ]
+  }
+}

@@ -1,0 +1,181 @@
+{
+  "experiment": "exp8-mongo-replicaset",
+  "generatedAt": "2026-10-18T05:59:00.677Z",
+  "environment": {
+    "nodeInContainer": "v22.23.3",
+    "topology": "3-node MongoDB replica set (rs0) inside docker-compose.prod.yml",
+    "caveat": "Single host: mongod nodes, Traefik, api replicas and the load generator share one CPU. Numbers describe this topology.",
+    "scratchDatabase": "flowforge_exp8scale"
+  },
+  "indexBuildAtScale": {
+    "collections": 11,
+    "totalMs": 15532,
+    "perCollection": [
+      {
+        "collection": "activitylogs",
+        "ms": 2943
+      },
+      {
+        "collection": "attachments",
+        "ms": 91
+      },
+      {
+        "collection": "comments",
+        "ms": 73
+      },
+      {
+        "collection": "invitations",
+        "ms": 83
+      },
+      {
+        "collection": "memberships",
+        "ms": 66
+      },
+      {
+        "collection": "notifications",
+        "ms": 82
+      },
+      {
+        "collection": "projects",
+        "ms": 68
+      },
+      {
+        "collection": "sessions",
+        "ms": 93
+      },
+      {
+        "collection": "tasks",
+        "ms": 11996
+      },
+      {
+        "collection": "users",
+        "ms": 20
+      },
+      {
+        "collection": "workspaces",
+        "ms": 17
+      }
+    ],
+    "dataset": {
+      "tasks": 200000,
+      "activity": 200000,
+      "insertMs": 10404
+    },
+    "explain": {
+      "stages": [
+        "LIMIT",
+        "FETCH",
+        "IXSCAN"
+      ],
+      "indexUsed": "workspaceId_1_projectId_1_status_1_position_1",
+      "docsExamined": 100,
+      "keysExamined": 100,
+      "nReturned": 100,
+      "executionTimeMillis": 51
+    }
+  },
+  "failover": {
+    "primaryBefore": "flowforge-prod-mongo1-1",
+    "leadershipSequence": [
+      {
+        "primary": "flowforge-prod-mongo1-1",
+        "atOffsetMs": -6654
+      },
+      {
+        "primary": "flowforge-prod-mongo2-1",
+        "atOffsetMs": 3588
+      }
+    ],
+    "leadershipMoved": true,
+    "stepDownOutput": "{\n  ok: 1,\n  '$clusterTime': {\n    clusterTime: Timestamp({ t: 1792302969, i: 4 }),\n    signature: {\n      hash: Binary.createFromBase64('AAAAAAAAAAAAAAAAAAAAAAAAAAA=', 0),\n      keyId: Long('0')\n    }\n  },\n  operationTime: Timestamp({ t: 1792302969, i: 4 })\n}",
+    "rsMembersAfter": "mongo1:27017=PRIMARY,mongo2:27017=SECONDARY,mongo3:27017=SECONDARY",
+    "stepDownAtOffsetMs": 8008,
+    "readPath": {
+      "polls": 102,
+      "failures": 0,
+      "statusHistogram": {
+        "200": 102
+      },
+      "latencyMs": {
+        "p50": 140,
+        "p97": 281,
+        "max": 974
+      },
+      "firstFailureAfterStepDownMs": null,
+      "recoveryMs": null
+    },
+    "writePath": {
+      "writes": 52,
+      "statusHistogram": {
+        "201": 52
+      }
+    },
+    "bulk": {
+      "requestsPerSecond": 214,
+      "latencyMs": {
+        "average": 139.8,
+        "p50": 123,
+        "p97_5": 303,
+        "p99": 339,
+        "max": 493
+      },
+      "totalRequests": 8560,
+      "non2xx": 0,
+      "connectionErrors": 0,
+      "statusCodeStats": {
+        "200": 8560
+      }
+    },
+    "readinessAfter": 200
+  },
+  "readPreference": {
+    "secondaryPreferred": {
+      "label": "secondaryPreferred",
+      "scenario": {
+        "name": "analytics @30 (secondaryPreferred)",
+        "url": "<traefik>/api/v1/workspaces/6ad450ca4100ecc2f696b494/analytics?range=30",
+        "connections": 30,
+        "durationSeconds": 12,
+        "requestsPerSecond": 122,
+        "latencyMs": {
+          "average": 244.7,
+          "p50": 248,
+          "p97_5": 420,
+          "p99": 483,
+          "max": 817
+        },
+        "totalRequests": 1463,
+        "non2xx": 0,
+        "errors": 0,
+        "timeouts": 0,
+        "statusCodeStats": {
+          "200": 1463
+        }
+      }
+    },
+    "primary": {
+      "label": "primary",
+      "scenario": {
+        "name": "analytics @30 (primary)",
+        "url": "<traefik>/api/v1/workspaces/6ad450ca4100ecc2f696b494/analytics?range=30",
+        "connections": 30,
+        "durationSeconds": 12,
+        "requestsPerSecond": 119,
+        "latencyMs": {
+          "average": 248.7,
+          "p50": 228,
+          "p97_5": 480,
+          "p99": 676,
+          "max": 817
+        },
+        "totalRequests": 1433,
+        "non2xx": 0,
+        "errors": 0,
+        "timeouts": 0,
+        "statusCodeStats": {
+          "200": 1433
+        }
+      }
+    }
+  }
+}
