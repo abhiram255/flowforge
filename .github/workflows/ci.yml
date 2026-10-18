@@ -101,7 +101,9 @@ jobs:
     if: github.ref == 'refs/heads/main'
     steps:
       - uses: actions/checkout@v4
-      - name: Validate compose file
-        run: docker compose config -q
+      - name: Validate compose files
+        run: |
+          docker compose config -q
+          docker compose -f docker-compose.prod.yml config -q
       - name: Build images
         run: docker compose build

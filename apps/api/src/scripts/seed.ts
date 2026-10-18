@@ -5,21 +5,21 @@
  * Usage:  npm run seed              (idempotent: skips when users exist)
  *         SEED_RESET=true npm run seed   (wipe + reseed)
  */
-import { connectDatabase, disconnectDatabase } from '../src/config/db'
-import { env } from '../src/config/env'
-import { logger } from '../src/config/logger'
-import { hashPassword } from '../src/lib/password'
-import { ActivityLog } from '../src/models/ActivityLog'
-import { Attachment } from '../src/models/Attachment'
-import { Comment } from '../src/models/Comment'
-import { Invitation } from '../src/models/Invitation'
-import { Membership } from '../src/models/Membership'
-import { Notification } from '../src/models/Notification'
-import { Project } from '../src/models/Project'
-import { Session } from '../src/models/Session'
-import { Task } from '../src/models/Task'
-import { User } from '../src/models/User'
-import { Workspace } from '../src/models/Workspace'
+import { connectDatabase, disconnectDatabase } from '../config/db'
+import { env } from '../config/env'
+import { logger } from '../config/logger'
+import { hashPassword } from '../lib/password'
+import { ActivityLog } from '../models/ActivityLog'
+import { Attachment } from '../models/Attachment'
+import { Comment } from '../models/Comment'
+import { Invitation } from '../models/Invitation'
+import { Membership } from '../models/Membership'
+import { Notification } from '../models/Notification'
+import { Project } from '../models/Project'
+import { Session } from '../models/Session'
+import { Task } from '../models/Task'
+import { User } from '../models/User'
+import { Workspace } from '../models/Workspace'
 import { TASK_PRIORITIES, TASK_STATUSES, type Role } from '@flowforge/shared'
 
 export const DEMO_PASSWORD = 'Password123!'
@@ -71,8 +71,10 @@ const TASK_TEMPLATES: Array<{ title: string; labels: string[]; priority: (typeof
 ]
 
 export async function seedDatabase(options: SeedOptions = {}): Promise<void> {
-  if (env.isProduction) {
-    throw new Error('Refusing to seed a production database')
+  // Refused by default in production; SEED_FORCE=true is the explicit opt-in
+  // for demo/staging stacks that run NODE_ENV=production.
+  if (env.isProduction && !env.SEED_FORCE) {
+    throw new Error('Refusing to seed a production database (set SEED_FORCE=true to override)')
   }
 
   if (options.reset) {

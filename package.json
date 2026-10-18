@@ -22,6 +22,8 @@
     "seed": "npm run seed -w @flowforge/api",
     "bench": "npm run bench -w @flowforge/api",
     "load": "npm run load -w @flowforge/api",
+    "stack:up": "docker compose -f docker-compose.prod.yml up -d --build",
+    "stack:down": "docker compose -f docker-compose.prod.yml down",
     "format": "prettier --write .",
     "format:check": "prettier --check ."
   },

@@ -15,7 +15,7 @@ import IORedis from 'ioredis'
 import mongoose from 'mongoose'
 import { connectDatabase, disconnectDatabase } from '../../src/config/db'
 import { logger } from '../../src/config/logger'
-import { seedDatabase } from '../seed'
+import { seedDatabase } from '../../src/scripts/seed'
 import {
   bootstrapDemoContext,
   dropDatabase,

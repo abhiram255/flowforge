@@ -74,6 +74,11 @@ jobs:
           script: |
             cd ${{ secrets.DEPLOY_PATH }}
             echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
-            docker compose -f docker-compose.prod.yml pull
-            docker compose -f docker-compose.prod.yml up -d --remove-orphans
+            # Pin this release's images (SHA tags, never :latest), then scale on every up —
+            # a missing --scale silently drops the deployment back to one replica.
+            export API_IMAGE="${{ env.IMAGE_PREFIX }}-api:${{ github.sha }}"
+            export WEB_IMAGE="${{ env.IMAGE_PREFIX }}-web:${{ github.sha }}"
+            docker compose -f docker-compose.prod.yml pull api worker web
+            docker compose -f docker-compose.prod.yml up -d --remove-orphans \
+              --scale api=${API_REPLICAS:-2} --scale worker=${WORKER_REPLICAS:-1}
             docker image prune -f

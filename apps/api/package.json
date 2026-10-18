@@ -12,7 +12,7 @@
     "typecheck": "tsc --noEmit",
     "test": "cross-env NODE_ENV=test vitest run",
     "test:watch": "cross-env NODE_ENV=test vitest",
-    "seed": "cross-env NODE_ENV=development tsx scripts/seed.ts",
+    "seed": "cross-env NODE_ENV=development tsx src/scripts/seed.ts",
     "bench": "cross-env NODE_ENV=development tsx scripts/benchmark.ts",
     "load": "cross-env NODE_ENV=development RATE_LIMIT_DISABLED=true LOG_LEVEL=warn tsx scripts/load-smoke.ts",
     "exp:1": "cross-env NODE_ENV=development tsx scripts/experiments/exp1-load.ts",

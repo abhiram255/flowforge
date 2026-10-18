@@ -18,7 +18,7 @@ import { connectDatabase, disconnectDatabase } from '../../src/config/db'
 import { env } from '../../src/config/env'
 import { logger } from '../../src/config/logger'
 import { JOB_DEFAULT_OPTIONS, QUEUE_NAME } from '../../src/jobs/queue'
-import { seedDatabase } from '../seed'
+import { seedDatabase } from '../../src/scripts/seed'
 import {
   bootstrapDemoContext,
   dropDatabase,

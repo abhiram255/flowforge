@@ -132,6 +132,24 @@ class S3Driver implements StorageDriver {
     const { client, commands } = await this.getClient()
     await client.send(new commands.DeleteObjectCommand({ Bucket: this.bucket, Key: key }))
   }
+
+  /** Idempotent: creates the configured bucket when it does not exist yet. */
+  async ensureBucket(): Promise<void> {
+    const { client, commands } = await this.getClient()
+    try {
+      await client.send(new commands.HeadBucketCommand({ Bucket: this.bucket }))
+      return
+    } catch (error) {
+      const name = (error as { name?: string }).name
+      if (name !== 'NotFound' && name !== 'NoSuchBucket') throw error
+    }
+    try {
+      await client.send(new commands.CreateBucketCommand({ Bucket: this.bucket }))
+    } catch (error) {
+      const name = (error as { name?: string }).name
+      if (name !== 'BucketAlreadyOwnedByYou' && name !== 'BucketAlreadyExists') throw error
+    }
+  }
 }
 
 let driver: StorageDriver | null = null
@@ -142,4 +160,11 @@ export function getStorageDriver(): StorageDriver {
     logger.info({ driver: driver.kind }, 'storage driver initialised')
   }
   return driver
+}
+
+/** S3-only: ensure the configured bucket exists (used by the compose init step). */
+export async function ensureBucket(): Promise<void> {
+  const current = getStorageDriver()
+  if (current.kind !== 's3') return
+  await (current as S3Driver).ensureBucket()
 }

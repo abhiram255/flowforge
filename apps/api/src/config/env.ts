@@ -112,6 +112,11 @@ export function buildEnvSchema() {
 
       SEED_ON_START: booleanish(false),
       SEED_RESET: booleanish(false),
+      /**
+       * Explicit opt-in to seed the demo dataset into a NODE_ENV=production
+       * stack (demo/staging only). The seed refuses production without it.
+       */
+      SEED_FORCE: booleanish(false),
       /** Benchmark-only escape hatch — refused in production. */
       RATE_LIMIT_DISABLED: booleanish(false),
       /** Cache A/B comparison for benchmarks — refused in production. */

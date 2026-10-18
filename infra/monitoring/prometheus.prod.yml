@@ -1,0 +1,13 @@
+# Production scrape config (observability profile): discovers every api and
+# worker replica through compose DNS — docker's embedded DNS returns one A
+# record per scaled container, and Prometheus scrapes each as its own target.
+global:
+  scrape_interval: 15s
+
+scrape_configs:
+  - job_name: flowforge-api
+    metrics_path: /metrics
+    dns_sd_configs:
+      - names: ['api', 'worker']
+        type: A
+        port: 4000

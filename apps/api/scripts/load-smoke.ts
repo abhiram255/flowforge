@@ -16,7 +16,7 @@ import { connectDatabase, disconnectDatabase } from '../src/config/db'
 import mongoose from 'mongoose'
 import { env } from '../src/config/env'
 import { logger } from '../src/config/logger'
-import { DEMO_PASSWORD, seedDatabase } from './seed'
+import { DEMO_PASSWORD, seedDatabase } from '../src/scripts/seed'
 
 interface AutocannonResult {
   latency: { p50: number; p97_5: number; p99: number; average: number }

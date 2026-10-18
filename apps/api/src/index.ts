@@ -25,7 +25,7 @@ async function main(): Promise<void> {
     if (env.isProduction) {
       throw new Error('SEED_ON_START is refused in production')
     }
-    const { seedDatabase } = await import('../scripts/seed.js')
+    const { seedDatabase } = await import('./scripts/seed.js')
     await seedDatabase({ reset: env.SEED_RESET })
   }
 
