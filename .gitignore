@@ -37,6 +37,3 @@ Thumbs.db
 .cache/
 .turbo/
 *.pid
-
-# Local tool state
-.commandcode/
